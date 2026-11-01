@@ -48,7 +48,8 @@ mod가 그리는 모든 글자(버튼, 안내, 오류, 명령 출력)는 영어�
 | 키 | 타입 | 기본값 | 용도 |
 | --- | --- | --- | --- |
 | `mcpServer` | string | `plugin:slack:slack` | `$.mcp.call`의 첫 인자. `/mcp`에 표시되는 서버 이름이다 |
-| `slackUserId` | string | 없음(필수) | `From me` 검색과 링크 도메인 조회에 쓰는 내 Slack user ID |
+
+내 Slack user ID는 설정값으로 받지 않는다. 패널을 처음 열 때 `me()`(`slack_read_user_profile`, `user_id` 생략)로 조회해서 `$.store`의 `myUserId`에 저장한다. 이 응답에는 이메일과 전화번호도 들어 있으므로, mod는 `User ID` 값만 꺼내고 나머지 응답은 저장하거나 로그로 남기지 않는다. 테스트 fixture의 프로필 값은 모두 가짜 값으로 쓴다.
 
 ## 3. 구조
 
@@ -94,6 +95,7 @@ flowchart LR
 
 | 함수 | MCP 도구 | 비고 |
 | --- | --- | --- |
+| `me()` | `slack_read_user_profile` | `user_id` 생략, `response_format=detailed`. `concise` 형식에는 user ID가 없다 |
 | `listChannels(cursor?)` | `slack_list_user_channels` | `types=public_channel,private_channel,im,mpim`, `exclude_archived=true`, `limit=200` |
 | `findChannel(name)` | `slack_search_channels` | `/slack-pane #채널`에서 목록에 없을 때만 쓴다 |
 | `readChannel(channelId, { latest?, oldest?, cursor?, limit })` | `slack_read_channel` | `response_format=detailed` |
@@ -158,7 +160,7 @@ flowchart LR
 | `search` | `× Clear` + 결과 목록(채널 이름, 작성자, 본문 첫 줄) | 결과를 누르면 오른쪽 열에 스레드 뷰를 연다. `× Clear`를 누르면 `channels` 모드로 돌아간다 |
 
 - 검색창(`Input`, placeholder `Search messages`)에서 Enter를 누르면 검색한다. 글자마다 검색하지 않는다.
-- `From me`를 누르면 `from:<@slackUserId>`와 검색창의 키워드로 검색한다.
+- `From me`를 누르면 `from:<@myUserId>`와 검색창의 키워드로 검색한다.
 - `▲ More` / `▼ More`로 목록 페이지를 넘긴다. 마지막 페이지에서 `▼ More`를 누르면 MCP `cursor`로 다음 페이지를 불러온다.
 
 ### 오른쪽 열의 뷰
@@ -232,10 +234,11 @@ flowchart LR
 | `refresh` | 주기(초), 마지막 성공 시각, 상태(`idle` / `refreshing` / `paused` / `error`), 실패 시각 |
 | `paneOpen` | 패널이 열려 있는지 |
 
-`$.store`에는 다음 두 값만 저장해서 세션이 바뀌어도 유지한다.
+`$.store`에는 다음 세 값만 저장해서 세션이 바뀌어도 유지한다.
 
 - `refreshSeconds`: 새로고침 주기. 기본값 10
 - `workspaceDomain`: 링크 조립에 쓰는 워크스페이스 도메인
+- `myUserId`: 내 Slack user ID
 
 ### 새로고침 상태 표시
 
@@ -327,7 +330,7 @@ MCP의 채널·스레드 조회 응답에는 permalink가 없다. 그래서 링�
 | 스레드 답글 | 위 링크 + `?thread_ts=<부모 ts>&cid=<채널ID>` |
 
 - `workspaceDomain`은 검색 응답의 `Permalink`에서 꺼내 `$.store`에 저장한다.
-- 값이 없을 때 `Copy link`를 누르면 `search([], "from:<@slackUserId>")`를 1건만 실행해서 도메인을 얻는다. 그래도 얻지 못하면 토스트 `Workspace domain unknown`을 띄운다.
+- 값이 없을 때 `Copy link`를 누르면 `search([], "from:<@myUserId>")`를 1건만 실행해서 도메인을 얻는다. 그래도 얻지 못하면 토스트 `Workspace domain unknown`을 띄운다.
 
 ## 9. 보내기
 
@@ -357,6 +360,7 @@ MCP의 채널·스레드 조회 응답에는 permalink가 없다. 그래서 링�
 
 | 도구 | JSON 키 | 메시지 구분 | `ts` | 기타 |
 | --- | --- | --- | --- | --- |
+| `slack_read_user_profile` (detailed) | `result` | `User ID:`, `Username:`, `Display Name:` 등 한 줄에 필드 하나 | 없음 | `User ID: U…` 줄에서 ID를 꺼낸다 |
 | `slack_list_user_channels` | `result` | `### #이름` 다음 `- **ID:**`, `- **Type:**` 줄 | 없음 | 다음 페이지는 `Use cursor: "…"` |
 | `slack_read_channel` (detailed) | `messages`, `pagination_info` | `=== Message from 이름 (ID) at YYYY-MM-DD HH:mm:ss KST ===` | `Message TS:` 줄 | `Thread: N replies (latest: …)`, `Reactions:` 줄 |
 | `slack_read_thread` | `messages`, `pagination_info` | `=== THREAD PARENT MESSAGE ===` 다음 `From:`, `Time:` 줄 | `Message TS:` 줄 | 답글이 없으면 `No thread messsages` |
@@ -383,7 +387,7 @@ MCP의 채널·스레드 조회 응답에는 permalink가 없다. 그래서 링�
 
 | 대상 | 방법 | 막는 결함 |
 | --- | --- | --- |
-| `parse.ts` | fixture(채널 목록, 채널, 답글 있는 스레드, 답글 없는 스레드, 검색, 업로드 2종)를 넣고 결과를 비교한다 | MCP 형식 해석 오류 |
+| `parse.ts` | fixture(내 프로필, 채널 목록, 채널, 답글 있는 스레드, 답글 없는 스레드, 검색, 업로드 2종)를 넣고 결과를 비교한다 | MCP 형식 해석 오류 |
 | `quote.ts` | 표시 생성 → 추출 왕복, 답글 표시, 중복 표시, 잘림 규칙 | 인용 누락·중복·잘못된 대상 |
 | `link.ts` | 채널 메시지, 스레드 답글 | 잘못된 링크 |
 | `commands.ts` | 채널 인자 해석, 주기 범위, 검색어의 `keywords`/`filters` 분리 | 잘못된 명령 동작 |
