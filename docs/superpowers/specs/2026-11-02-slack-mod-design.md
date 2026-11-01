@@ -1,6 +1,6 @@
 # Slack 패널 mod 설계
 
-Claude Code 터미널 오른쪽 패널에서 Slack 채널과 스레드를 읽고, 메시지와 사진을 보내고, 메시지나 스레드를 Claude 프롬프트에 인용하는 mod를 만든다. Slack 연동은 이미 연결된 Slack MCP 서버를 `$.mcp.call`로 호출해서 처리하고, MCP의 텍스트 출력은 파서 하나에서만 해석한다. 열려 있는 채널이나 스레드 하나만 10초마다(`/slack-refresh N`으로 변경) 다시 조회한다.
+Claude Code 터미널 오른쪽 패널에서 Slack 채널과 스레드를 읽고, 메시지와 사진을 보내고, 메시지나 스레드를 Claude 프롬프트에 인용하는 mod를 만든다. Slack 연동은 이미 연결된 Slack MCP 서버를 `$.mcp.call`로 호출해서 처리하고, MCP의 텍스트 출력은 파서 하나에서만 해석한다. 열려 있는 채널이나 스레드 하나만 10초마다(`/slack-pane-refresh N`으로 변경) 다시 조회한다.
 
 ## 1. 목적과 범위
 
@@ -19,7 +19,7 @@ Claude Code 터미널 오른쪽 패널에서 Slack 채널과 스레드를 읽고
 | Claude 연동 | `Quote message`, `Quote thread` |
 | 링크 | `Copy link` |
 | 새로고침 | 열린 채널 또는 스레드 하나만 N초마다 조회, 상태 표시 |
-| 명령 | `/slack-pane`, `/slack-refresh`, `/slack-search` |
+| 명령 | `/slack-pane`, `/slack-pane-refresh`, `/slack-pane-search` |
 
 ### 범위 밖
 
@@ -37,7 +37,8 @@ mod가 그리는 모든 글자(버튼, 안내, 오류, 명령 출력)는 영어�
 
 ## 2. 실행 환경과 전제
 
-- mod는 `~/Projects/me/claude-slack-mod`에 있고, `claude --plugin-dir ~/Projects/me/claude-slack-mod`로 실행한다.
+- 플러그인 이름은 `slack-pane`이다. `claude-` 접두사는 Anthropic 플러그인용으로 예약돼 있어 플러그인 이름에 쓸 수 없다. 저장소와 폴더 이름은 `claude-slack-pane`이다.
+- mod는 `~/Projects/me/claude-slack-pane`에 있고, `claude --plugin-dir ~/Projects/me/claude-slack-pane`로 실행한다.
 - 오른쪽 고정 패널(`placement: "dock"`)은 fullscreen 모드에서 터미널이 110열 이상일 때만 나온다. 그보다 좁으면 프롬프트 위(`inline`)에 붙는다. 패널 너비는 터미널 너비의 45%까지다.
 - Slack 호출은 Claude Code에 연결된 Slack MCP 서버를 쓴다. 새 Slack 앱이나 토큰은 만들지 않는다.
 - 클립보드 이미지 첨부는 macOS에서만 동작한다(`osascript`). 파일 경로 첨부는 운영체제와 상관없이 동작한다.
@@ -112,8 +113,8 @@ flowchart LR
 | 명령 | 인자 (`argumentHint`) | 동작 |
 | --- | --- | --- |
 | `/slack-pane` | `[#channel \| @user \| channel ID]` | 인자가 없으면 패널을 열거나 닫는다. 인자가 있으면 패널을 열고 그 채널이나 DM의 최신 뷰를 연다 |
-| `/slack-refresh` | `[seconds]` | 인자가 없으면 현재 주기를 출력한다. 정수 N이 있으면 주기를 N초로 바꾼다 |
-| `/slack-search` | `<query>` | 패널을 열고 검색을 실행해 왼쪽 열에 결과를 보여 준다. 검색어 안의 Slack 검색 조건(`in:`, `from:`, `after:` 등)은 `filters`로, 나머지 단어는 `keywords`로 나눈다 |
+| `/slack-pane-refresh` | `[seconds]` | 인자가 없으면 현재 주기를 출력한다. 정수 N이 있으면 주기를 N초로 바꾼다 |
+| `/slack-pane-search` | `<query>` | 패널을 열고 검색을 실행해 왼쪽 열에 결과를 보여 준다. 검색어 안의 Slack 검색 조건(`in:`, `from:`, `after:` 등)은 `filters`로, 나머지 단어는 `keywords`로 나눈다 |
 
 - 모든 명령은 `immediate: true`로 등록한다. Claude가 응답하는 중에도 실행된다.
 - 결과와 오류는 명령 출력(`{ text }`) 한 줄로 보여 준다.
@@ -121,11 +122,11 @@ flowchart LR
 | 명령 | 출력 예 |
 | --- | --- |
 | `/slack-pane` | `Slack pane opened` / `Slack pane closed` / `Opened #backend` / `Channel not found: #backnd` |
-| `/slack-refresh` | `Refresh interval: 10s` / `Refresh interval set to 30s` / `Interval must be an integer from 5 to 300` |
-| `/slack-search` | `Searching: deploy from:<@U…>` / `Usage: /slack-search <query>` |
+| `/slack-pane-refresh` | `Refresh interval: 10s` / `Refresh interval set to 30s` / `Interval must be an integer from 5 to 300` |
+| `/slack-pane-search` | `Searching: deploy from:<@U…>` / `Usage: /slack-pane-search <query>` |
 
 - `#채널`과 `@사람`은 불러온 채널 목록에서 이름으로 먼저 찾고, 없으면 `findChannel`로 찾는다. `C`, `D`, `G`로 시작하는 ID는 그대로 쓴다.
-- `/slack-refresh`의 범위는 5–300초다. 하한 5초는 API 호출 수를 제한하려고 정한 값이며, 이 MCP의 실제 호출 한도는 확인하지 않았다.
+- `/slack-pane-refresh`의 범위는 5–300초다. 하한 5초는 API 호출 수를 제한하려고 정한 값이며, 이 MCP의 실제 호출 한도는 확인하지 않았다.
 
 ## 5. 화면 배치와 조작
 
@@ -280,7 +281,7 @@ sequenceDiagram
 4. 패널이 닫혀 있으면 타이머를 걸지 않는다.
 5. 새로고침은 최신 50개로 목록을 교체하되, `▲ Older`로 불러온 이전 페이지는 남긴다.
 6. 선택한 메시지는 새로고침 뒤에도 같은 `ts`로 유지한다. 그 `ts`가 목록에서 사라지면 선택을 해제한다.
-7. `/slack-refresh N`은 진행 중인 타이머를 취소하고 새 주기로 다시 건다.
+7. `/slack-pane-refresh N`은 진행 중인 타이머를 취소하고 새 주기로 다시 건다.
 
 ## 7. 인용
 
@@ -415,4 +416,4 @@ MCP의 채널·스레드 조회 응답에는 permalink가 없다. 그래서 링�
 | 조립한 링크가 Slack 앱에서 열리는지 | 수동 확인 3번 | 검색 응답의 permalink 형식을 다시 확인한다 |
 | 오른쪽 열에 동작 줄 버튼이 한 줄로 들어가는지 | UI 구현 | 두 줄로 나눈다 |
 | 터미널 파일 끌어다 놓기가 패널 입력칸에서 경로를 입력하는지 | 수동 확인 2번 | 경로를 직접 입력하도록 안내한다 |
-| Slack MCP 호출 한도 | 운영 중 | `/slack-refresh` 하한을 올린다 |
+| Slack MCP 호출 한도 | 운영 중 | `/slack-pane-refresh` 하한을 올린다 |

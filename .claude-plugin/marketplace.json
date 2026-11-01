@@ -1,0 +1,13 @@
+{
+  "name": "slack-pane",
+  "description": "Slack pane for Claude Code",
+  "owner": {
+    "name": "jo-minjun"
+  },
+  "plugins": [
+    {
+      "name": "slack-pane",
+      "source": "./"
+    }
+  ]
+}
