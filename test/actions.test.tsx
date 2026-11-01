@@ -195,7 +195,7 @@ test('back from channel thread returns to latest', async ($, on) => {
   await ui.press({ key: 'open-thread' })
   await ui.press({ key: 'back' })
   const reads = sent.filter(s => s.tool === 'slack_read_channel').map(s => s.args)
-  expect(reads[reads.length - 1]).toEqual({ channel_id: 'C0FAKE0001', limit: 50, response_format: 'detailed' })
+  expect(reads[reads.length - 1]).toEqual({ channel_id: 'C0FAKE0001', limit: 20, response_format: 'detailed' })
   expect(await ui.find({ key: 'latest' })).toBeUndefined()
   await ui.unmount()
 })

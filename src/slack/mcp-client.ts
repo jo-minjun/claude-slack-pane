@@ -13,6 +13,30 @@ import {
 } from './parse'
 
 export type McpCall = (tool: string, args: Record<string, unknown>) => Promise<McpToolResult>
+export type ReadFile = (path: string) => Promise<string>
+
+// Claude Code swaps a result too large for the model for a notice naming the
+// file it saved the result to; the mod reads that file instead.
+const SAVED_TO = /saved to (\/\S+?\.(?:txt|json))(?=[.\s]|$)/
+
+async function fromSavedFile(result: McpToolResult, readFile?: ReadFile): Promise<McpToolResult> {
+  if (result.isError || readFile === undefined) return result
+  const text = result.content.map(block => (block.type === 'text' ? block.text : '')).join('')
+  const path = SAVED_TO.exec(text)?.[1]
+  if (path === undefined || text.trimStart().startsWith('{')) return result
+  const saved = await readFile(path)
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(saved)
+  } catch {
+    return { content: [{ type: 'text', text: saved }], isError: false }
+  }
+  if (Array.isArray(parsed)) {
+    const inner = parsed.map(block => (block?.type === 'text' ? String(block.text) : '')).join('')
+    return { content: [{ type: 'text', text: inner }], isError: false }
+  }
+  return { content: [{ type: 'text', text: saved }], isError: false }
+}
 
 const CHANNEL_TYPES = 'public_channel,private_channel,im,mpim'
 const CHANNEL_PAGE_SIZE = 200
@@ -22,13 +46,18 @@ const DETAILED = 'detailed'
 const defined = (args: Record<string, unknown>) =>
   Object.fromEntries(Object.entries(args).filter(([, value]) => value !== undefined))
 
-export function createMcpClient(call: McpCall): SlackClient {
+export function createMcpClient(call: McpCall, readFile?: ReadFile): SlackClient {
   const fields = async (tool: string, args: Record<string, unknown>) => {
     let result: McpToolResult
     try {
       result = await call(tool, defined(args))
     } catch (error) {
       throw new SlackError('not-connected', error instanceof Error ? error.message : String(error))
+    }
+    try {
+      result = await fromSavedFile(result, readFile)
+    } catch {
+      throw new SlackError('parse', 'Unrecognized Slack response: saved result unreadable')
     }
     return unwrap(result)
   }
@@ -108,5 +137,8 @@ export function createMcpClient(call: McpCall): SlackClient {
 }
 
 export function slackClient($: EngineInterface, server: string): SlackClient {
-  return createMcpClient((tool, args) => $.mcp.call(server, tool, args))
+  return createMcpClient(
+    (tool, args) => $.mcp.call(server, tool, args),
+    async path => String(await $.fs.read(path)),
+  )
 }

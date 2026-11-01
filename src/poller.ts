@@ -18,7 +18,7 @@ import {
   updateView,
 } from './state'
 
-const PAGE_SIZE = 50
+const PAGE_SIZE = 20
 const AROUND = 25
 
 type Timer = ReturnType<EngineInterface['clock']['after']>

@@ -31,9 +31,30 @@ export function clockTime(ms: number, tzMinutes: number): string {
   return `${pad(at.getUTCHours())}:${pad(at.getUTCMinutes())}:${pad(at.getUTCSeconds())}`
 }
 
+// Hangul, CJK, full-width forms and most emoji take two terminal cells.
+const WIDE = /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F300}-\u{1FAFF}]/u
+
+export function displayWidth(text: string): number {
+  let width = 0
+  for (const char of text) width += WIDE.test(char) ? 2 : 1
+  return width
+}
+
+export function fitWidth(text: string, cells: number): string {
+  if (displayWidth(text) <= cells) return text
+  let out = ''
+  let width = 0
+  for (const char of text) {
+    const w = WIDE.test(char) ? 2 : 1
+    if (width + w > cells - 1) break
+    out += char
+    width += w
+  }
+  return `${out}…`
+}
+
 export function firstLine(text: string, width: number): string {
-  const line = text.split('\n')[0] ?? ''
-  return line.length > width ? `${line.slice(0, Math.max(0, width - 1))}…` : line
+  return fitWidth(text.split('\n')[0] ?? '', width)
 }
 
 export function rowsFor(text: string, width: number): number {

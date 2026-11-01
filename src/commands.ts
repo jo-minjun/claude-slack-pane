@@ -2,6 +2,7 @@ import type { EngineInterface } from 'claude-code'
 
 import type { Channel } from '../types'
 import { closePane, findKnownChannel, myUserId, openPane, runSearch } from './actions'
+import { reportError } from './errors'
 import { channelLabel } from './format'
 import { openView, setIntervalSeconds } from './poller'
 import type { SlackClient } from './slack/client'
@@ -58,7 +59,12 @@ export async function runPaneCommand($: EngineInterface, client: SlackClient, ar
     return 'Slack pane opened'
   }
   await openPane($, client)
-  const channel = await resolveTarget($, client, target)
+  let channel: Channel | undefined
+  try {
+    channel = await resolveTarget($, client, target)
+  } catch (error) {
+    return reportError($, error)
+  }
   if (!channel) return `Channel not found: ${args.trim()}`
   const label = channelLabel(channel)
   await openView($, client, { kind: 'channel', channelId: channel.id, label })

@@ -9,6 +9,8 @@ import type { SlackClient } from '../slack/client'
 import { updateChannels, updateLeft } from '../state'
 
 const HEADER_ROWS = 5
+// A button draws `[ ` and ` ]` around its label; the column keeps one cell of padding.
+const BUTTON_CHROME = 5
 
 export function hitLabel(hit: SearchHit): string {
   return hit.channelId.startsWith('D') ? `@${hit.channelName}` : `#${hit.channelName}`
@@ -87,14 +89,14 @@ export function channelColumn(
                 })
               }
             >
-              <Text dimColor>{firstLine(`${hitLabel(hit)} ${hit.userName}`, width - 2)}</Text>
-              <Text>{`\n${firstLine(hit.text, width - 2)}`}</Text>
+              <Text dimColor>{firstLine(`${hitLabel(hit)} ${hit.userName}`, width - BUTTON_CHROME)}</Text>
+              <Text>{`\n${firstLine(hit.text, width - BUTTON_CHROME)}`}</Text>
             </Button>
           ))
         : channels.items.slice(page * pageSize, (page + 1) * pageSize).map(channel => (
             <Button
               key={`ch:${channel.id}`}
-              label={firstLine(`${view?.channelId === channel.id ? '> ' : '  '}${channelLabel(channel)}`, width - 2)}
+              label={firstLine(`${view?.channelId === channel.id ? '> ' : ''}${channelLabel(channel)}`, width - BUTTON_CHROME)}
               onPress={() => void openView($, client, { kind: 'channel', channelId: channel.id, label: channelLabel(channel) })}
             />
           ))}
