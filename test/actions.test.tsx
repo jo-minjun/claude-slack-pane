@@ -41,34 +41,34 @@ test('action bar appears on selection', async ($, on) => {
   await start($)
   await run($, 'slack-pane', '#general')
   const ui = await $.ui.mount(PANE)
-  expect(await ui.find({ key: 'quote-message' })).toBeUndefined()
+  expect(await ui.find({ key: 'quote' })).toBeUndefined()
   expect(await ui.find({ key: 'copy-link' })).toBeUndefined()
   await ui.press({ key: BOT })
-  for (const key of ['quote-message', 'quote-thread', 'open-thread', 'copy-link', 'open-in-slack']) {
+  for (const key of ['quote', 'open-thread', 'copy-link', 'open-in-slack']) {
     expect(await ui.find({ key })).toBeDefined()
   }
   await ui.press({ key: PARENT })
   await ui.press({ key: 'open-thread' })
   await ui.press({ key: REPLY })
-  expect(await ui.find({ key: 'quote-message' })).toBeDefined()
+  expect(await ui.find({ key: 'quote' })).toBeDefined()
   expect(await ui.find({ key: 'open-thread' })).toBeUndefined()
   await ui.unmount()
 })
 
-test('quote message fills prompt', async ($, on) => {
+test('quote fills prompt', async ($, on) => {
   const { filled } = engine(on, slack)
   await start($)
   await run($, 'slack-pane', '#general')
   const ui = await $.ui.mount(PANE)
   await ui.press({ key: BOT })
-  await ui.press({ key: 'quote-message' })
+  await ui.press({ key: 'quote' })
   expect(filled.length).toBe(1)
   expect(filled[0]?.mode).toBe('insert')
-  expect(filled[0]?.text).toMatch(/^\[slack:message:C0FAKE0001\/1793337289\.953239 in:#general from:@Bot One at:[\d/: ]+\] $/)
+  expect(filled[0]?.text).toMatch(/^\[slack:C0FAKE0001\/1793337289\.953239 in:#general from:@Bot One at:[\d/: ]+\] $/)
   await ui.unmount()
 })
 
-test('quote thread on reply keeps parent', async ($, on) => {
+test('quote on reply keeps parent', async ($, on) => {
   const { filled } = engine(on, slack)
   await start($)
   await run($, 'slack-pane', '#general')
@@ -76,8 +76,8 @@ test('quote thread on reply keeps parent', async ($, on) => {
   await ui.press({ key: PARENT })
   await ui.press({ key: 'open-thread' })
   await ui.press({ key: REPLY })
-  await ui.press({ key: 'quote-thread' })
-  expect(filled[0]?.text).toMatch(/^\[slack:thread:C0FAKE0001\/1793325746\.615629\/1793334367\.423609 in:#general from:@Bob Lee at:.+\] $/)
+  await ui.press({ key: 'quote' })
+  expect(filled[0]?.text).toMatch(/^\[slack:C0FAKE0001\/1793325746\.615629\/1793334367\.423609 in:#general from:@Bob Lee at:.+\] $/)
   await ui.unmount()
 })
 
@@ -245,10 +245,10 @@ test('prompt.submit attaches quote context', async ($, on) => {
   })
   await start($)
   await run($, 'slack-pane')
-  await $.prompt.submit({ text: 'see [slack:thread:C0FAKE0001/1793325746.615629 in:#general from:@Bob at:10/30 14:14]' } as never)
-  expect(seen[0]?.[0]?.startsWith('<slack-quote kind="thread" channel="#general" source="untrusted">')).toBe(true)
+  await $.prompt.submit({ text: 'see [slack:C0FAKE0001/1793325746.615629 in:#general from:@Bob at:10/30 14:14]' } as never)
+  expect(seen[0]?.[0]?.startsWith('<slack-quote channel="#general" source="untrusted">')).toBe(true)
   expect(seen[0]?.[0]).toContain('Bob Lee: First reply')
-  await $.prompt.submit({ text: 'bad [slack:message:C0FAKE0001/9.9 in:#general from:@x at:1]' } as never)
+  await $.prompt.submit({ text: 'bad [slack:C0FAKE0001/9.9 in:#general from:@x at:1]' } as never)
   expect(seen[1]).toEqual(['Slack quote unavailable: #general 9.9'])
   expect(toasts).toEqual(['Quote fetch failed'])
 })

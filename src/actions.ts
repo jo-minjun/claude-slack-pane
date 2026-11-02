@@ -3,7 +3,7 @@ import type { EngineInterface, RenderSurface } from 'claude-code'
 import type { Channel, Message, View } from '../types'
 import { clearBanner, reportError } from './errors'
 import { channelLabel, formatTime, tzOffsetMinutes } from './format'
-import { attachQuotes, extractQuotes, type QuoteKind, type QuoteRef, quoteToken } from './quote'
+import { attachQuotes, extractQuotes, type QuoteRef, quoteToken } from './quote'
 import { restartTimer, stopTimer } from './poller'
 import type { SlackClient } from './slack/client'
 import { domainFromPermalink, messageLink } from './slack/link'
@@ -96,14 +96,14 @@ export async function findKnownChannel(
   return (await readChannels($)).items.find(test)
 }
 
-export function quoteRef(kind: QuoteKind, view: View, m: Message): QuoteRef {
-  const base = { kind, channelId: view.channelId, ts: m.ts }
+function quoteRef(view: View, m: Message): QuoteRef {
+  const base = { channelId: view.channelId, ts: m.ts }
   return m.threadTs === undefined ? base : { ...base, threadTs: m.threadTs }
 }
 
-export async function quoteMessage($: EngineInterface, kind: QuoteKind, view: View, m: Message): Promise<void> {
+export async function quoteMessage($: EngineInterface, view: View, m: Message): Promise<void> {
   const time = formatTime(m.ts, await $.clock.now(), tzOffsetMinutes())
-  const token = quoteToken(quoteRef(kind, view, m), view.label, time, m.userName)
+  const token = quoteToken(quoteRef(view, m), view.label, time, m.userName)
   await $.prompt.fill({ text: `${token} `, mode: 'insert' })
 }
 

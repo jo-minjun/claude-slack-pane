@@ -140,11 +140,11 @@ test('wheel at the oldest message stops asking once nothing older is left', asyn
 test('the action bar is drawn under the selected message', async ($, on) => {
   engine(on, slack({ newest: 40 }))
   const ui = await openFirstChannel($)
-  expect(await ui.find({ key: 'quote-message' })).toBeUndefined()
+  expect(await ui.find({ key: 'quote' })).toBeUndefined()
   await ui.press({ key: `msg:${tsOf(38)}` })
   const row = await ui.find({ key: `row:${tsOf(38)}` })
-  expect(JSON.stringify(row?.children)).toContain('"quote-message"')
-  expect(JSON.stringify((await ui.find({ key: `row:${tsOf(39)}` }))?.children)).not.toContain('"quote-message"')
+  expect(JSON.stringify(row?.children)).toContain('"quote"')
+  expect(JSON.stringify((await ui.find({ key: `row:${tsOf(39)}` }))?.children)).not.toContain('"quote"')
   await ui.unmount()
 })
 
@@ -159,7 +159,7 @@ test('selecting a message cut by the top brings its header and action bar into v
   expect((await ui.find({ key: cut }))?.text).toContain('Alice Kim')
   expect((await ui.find({ key: cut }))?.text).toContain('body 36')
   expect((await ui.find({ key: `row:${tsOf(36)}` }))?.text).toContain('Copy link')
-  expect(await ui.find({ key: 'quote-message' })).toBeDefined()
+  expect(await ui.find({ key: 'quote' })).toBeDefined()
   await ui.unmount()
 })
 

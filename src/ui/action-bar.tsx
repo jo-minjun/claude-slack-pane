@@ -7,8 +7,7 @@ import { openView } from '../poller'
 import type { SlackClient } from '../slack/client'
 
 const LABEL = {
-  quoteMessage: 'Quote message',
-  quoteThread: 'Quote thread',
+  quote: 'Quote',
   openThread: 'Open thread',
   copyLink: 'Copy link',
   openInSlack: 'Slack ↗',
@@ -20,7 +19,7 @@ const LINK_SEPARATOR = ' · '
 export const HEADER_LINKS_WIDTH = displayWidth(`${LABEL.copyLink}${LINK_SEPARATOR}${LABEL.openInSlack}`)
 
 function labels(view: View): string[] {
-  return [LABEL.quoteMessage, LABEL.quoteThread, ...(view.kind === 'channel' ? [LABEL.openThread] : [])]
+  return [LABEL.quote, ...(view.kind === 'channel' ? [LABEL.openThread] : [])]
 }
 
 export function actionBarRows(view: View, width: number): number {
@@ -37,8 +36,7 @@ export function actionBar(
   const { Box, Button } = els
   return (
     <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
-      <Button key="quote-message" label={LABEL.quoteMessage} onPress={() => void quoteMessage($, 'message', view, selected)} />
-      <Button key="quote-thread" label={LABEL.quoteThread} onPress={() => void quoteMessage($, 'thread', view, selected)} />
+      <Button key="quote" label={LABEL.quote} onPress={() => void quoteMessage($, view, selected)} />
       {view.kind === 'channel' && (
         <Button
           key="open-thread"
