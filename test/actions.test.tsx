@@ -43,7 +43,7 @@ test('action bar appears on selection', async ($, on) => {
   const ui = await $.ui.mount(PANE)
   expect(await ui.find({ key: 'quote-message' })).toBeUndefined()
   await ui.press({ key: BOT })
-  for (const key of ['quote-message', 'quote-thread', 'open-thread', 'copy-link']) {
+  for (const key of ['quote-message', 'quote-thread', 'open-thread', 'copy-link', 'open-in-slack']) {
     expect(await ui.find({ key })).toBeDefined()
   }
   await ui.press({ key: PARENT })
@@ -119,6 +119,40 @@ test('copy link without a domain says so', async ($, on) => {
   await ui.press({ key: 'copy-link' })
   expect(copied).toEqual([])
   expect(toasts).toEqual(['Workspace domain unknown'])
+  await ui.unmount()
+})
+
+const opener = (on: Parameters<typeof engine>[0], exitCode: number) => {
+  const runs: string[][] = []
+  on('process.run', (_, e) => {
+    runs.push([...e.argv])
+    return { value: { exitCode, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  return runs
+}
+
+test('open in slack opens the message link', async ($, on) => {
+  const { toasts } = engine(on, slack, { workspaceDomain: 'acme.slack.com' })
+  const runs = opener(on, 0)
+  await start($)
+  await run($, 'slack-pane', '#general')
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: BOT })
+  await ui.press({ key: 'open-in-slack' })
+  expect(runs).toEqual([['open', 'https://acme.slack.com/archives/C0FAKE0001/p1793337289953239']])
+  expect(toasts).toEqual([])
+  await ui.unmount()
+})
+
+test('open in slack says when it fails', async ($, on) => {
+  const { toasts } = engine(on, slack, { workspaceDomain: 'acme.slack.com' })
+  opener(on, 1)
+  await start($)
+  await run($, 'slack-pane', '#general')
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: BOT })
+  await ui.press({ key: 'open-in-slack' })
+  expect(toasts).toEqual(['Could not open Slack'])
   await ui.unmount()
 })
 

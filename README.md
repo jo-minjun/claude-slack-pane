@@ -14,6 +14,7 @@ It talks to Slack through the Slack MCP server you already connected to Claude C
 - **Images.** `Attach file` takes a path (dragging a file onto the terminal types its path). `Paste image` sends the image on the clipboard (macOS only).
 - **Quote into Claude.** Select a message, then `Quote message` or `Quote thread`. A short reference goes into the prompt box; when you send the prompt, the mod attaches the message or the whole thread as context. Quoted text is marked as untrusted data.
 - **Copy link.** Copies the message's Slack link.
+- **Open in Slack.** Opens the message in Slack (macOS `open`). Edit or delete a message there: the Slack MCP cannot do either.
 
 ## Requirements
 
@@ -54,6 +55,7 @@ claude --plugin-dir /path/to/claude-slack-pane
 
 - The Slack MCP returns human-readable text. The mod parses it; a change in that text format can break parsing. The pane then says `Unrecognized Slack response`, and the debug log (`claude --debug`) holds the start of the response.
 - No unread markers, no emoji rendering, no reactions.
+- No editing or deleting messages in the pane; `Open in Slack` takes you to the message.
 - Sending has no confirmation step. Check the header before pressing Enter.
 
 ## Development

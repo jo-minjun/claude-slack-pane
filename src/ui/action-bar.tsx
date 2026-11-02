@@ -1,7 +1,7 @@
 import type { ElementTable, EngineInterface } from 'claude-code'
 
 import type { Message, View } from '../../types'
-import { copyLink, quoteMessage } from '../actions'
+import { copyLink, openInSlack, quoteMessage } from '../actions'
 import { displayWidth, packedRows } from '../format'
 import { openView } from '../poller'
 import type { SlackClient } from '../slack/client'
@@ -11,12 +11,13 @@ const LABEL = {
   quoteThread: 'Quote thread',
   openThread: 'Open thread',
   copyLink: 'Copy link',
+  openInSlack: 'Open in Slack',
 } as const
 // The terminal draws a Button as `[ label ]`.
 const BUTTON_CHROME = 4
 
 function labels(view: View): string[] {
-  return [LABEL.quoteMessage, LABEL.quoteThread, ...(view.kind === 'channel' ? [LABEL.openThread] : []), LABEL.copyLink]
+  return [LABEL.quoteMessage, LABEL.quoteThread, ...(view.kind === 'channel' ? [LABEL.openThread] : []), LABEL.copyLink, LABEL.openInSlack]
 }
 
 export function actionBarRows(view: View, width: number): number {
@@ -51,6 +52,7 @@ export function actionBar(
         />
       )}
       <Button key="copy-link" label={LABEL.copyLink} onPress={press => void copyLink($, client, view, selected, press.surface)} />
+      <Button key="open-in-slack" label={LABEL.openInSlack} onPress={() => void openInSlack($, client, view, selected)} />
     </Box>
   )
 }

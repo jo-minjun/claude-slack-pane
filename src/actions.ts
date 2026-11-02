@@ -123,6 +123,12 @@ async function workspaceDomain($: EngineInterface, client: SlackClient): Promise
   }
 }
 
+async function linkFor($: EngineInterface, client: SlackClient, view: View, m: Message): Promise<string | undefined> {
+  const domain = await workspaceDomain($, client)
+  if (domain === undefined) $.ui.toast('Workspace domain unknown')
+  return domain === undefined ? undefined : messageLink(domain, view.channelId, m.ts, m.threadTs)
+}
+
 export async function copyLink(
   $: EngineInterface,
   client: SlackClient,
@@ -130,13 +136,18 @@ export async function copyLink(
   m: Message,
   surface: RenderSurface,
 ): Promise<void> {
-  const domain = await workspaceDomain($, client)
-  if (domain === undefined) {
-    $.ui.toast('Workspace domain unknown')
-    return
-  }
-  await $.ui.copy({ text: messageLink(domain, view.channelId, m.ts, m.threadTs), surface })
+  const link = await linkFor($, client, view, m)
+  if (link === undefined) return
+  await $.ui.copy({ text: link, surface })
   $.ui.toast('Link copied')
+}
+
+// Slack edits and deletes there: the Slack MCP has no tool for either.
+export async function openInSlack($: EngineInterface, client: SlackClient, view: View, m: Message): Promise<void> {
+  const link = await linkFor($, client, view, m)
+  if (link === undefined) return
+  const result = await $.process.run(['open', link])
+  if (result.exitCode !== 0) $.ui.toast('Could not open Slack')
 }
 
 export async function attachPromptQuotes(
