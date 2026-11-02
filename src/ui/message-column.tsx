@@ -113,7 +113,8 @@ export function messageList(
       parts.push(
         <Box key={`row:${m.ts}`} flexDirection="column" hover={MESSAGE_HOVER}>
           {isHeaderApart && (
-            <Box flexDirection="row" justifyContent="space-between">
+            // As wide as the body's rows, so the links end where the text does.
+            <Box flexDirection="row" justifyContent="space-between" width={frame.width}>
               <Box flexDirection="row">{header}</Box>
               {headerLinks($, client, els, view, m)}
             </Box>
