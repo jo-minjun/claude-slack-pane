@@ -153,13 +153,28 @@ test('selecting a message cut by the top brings its header and action bar into v
   const ui = await openFirstChannel($)
   const cut = `msg:${tsOf(36)}`
   expect((await ui.findAll({ type: 'Button' })).map(b => b.key).find(k => k?.startsWith('msg:'))).toBe(cut)
-  expect((await ui.find({ key: cut }))?.text).toBe('body 36')
+  expect((await ui.find({ key: cut }))?.text?.trimEnd()).toBe('body 36')
   await ui.press({ key: cut })
   // Header and body stay one Button, so the pointer on the body inverts the header row, not the body's first.
   expect((await ui.find({ key: cut }))?.text).toContain('Alice Kim')
   expect((await ui.find({ key: cut }))?.text).toContain('body 36')
   expect((await ui.find({ key: `row:${tsOf(36)}` }))?.text).toContain('Copy link')
   expect(await ui.find({ key: 'quote' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a message is pressable across the whole width and lets go when pressed again', async ($, on) => {
+  engine(on, slack({ newest: 40 }))
+  const ui = await openFirstChannel($)
+  const key = `msg:${tsOf(39)}`
+  const rows = (await ui.find({ key }))!.text!.split('\n')
+  expect(rows.length).toBe(2)
+  expect(rows[0]!.length).toBe(rows[1]!.length)
+  expect(rows[1]!.trimEnd()).toBe('body 39')
+  await ui.press({ key })
+  expect(await ui.find({ key: 'quote' })).toBeDefined()
+  await ui.press({ key })
+  expect(await ui.find({ key: 'quote' })).toBeUndefined()
   await ui.unmount()
 })
 

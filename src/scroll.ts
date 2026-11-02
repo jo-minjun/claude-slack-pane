@@ -175,8 +175,12 @@ export async function scrollPane($: EngineInterface, client: SlackClient, e: UiS
   await (isOverLeft ? scrollLeft($, client, e.by) : scrollMessages($, client, e.by))
 }
 
-// Selects a message and brings it, with its action bar, into the window.
+// Selects a message and brings it, with its action bar, into the window; the selected one, pressed again, is let go.
 export async function selectMessage($: EngineInterface, ts: string): Promise<void> {
+  if ((await readSelectedTs($)) === ts) {
+    await updateSelectedTs($, () => null)
+    return
+  }
   await updateSelectedTs($, () => ts)
   const [view, messages, anchor] = await Promise.all([readView($), readMessages($), readMessageTop($)])
   if (!layout || !view) return

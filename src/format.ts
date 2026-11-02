@@ -55,6 +55,11 @@ export function displayWidth(text: string): number {
   return width
 }
 
+// Spaces after the text up to `cells`, so what it is drawn in reaches that far.
+export function padWidth(text: string, cells: number): string {
+  return `${text}${' '.repeat(Math.max(0, cells - displayWidth(text)))}`
+}
+
 export function fitWidth(text: string, cells: number): string {
   if (displayWidth(text) <= cells) return text
   let out = ''

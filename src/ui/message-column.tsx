@@ -1,7 +1,7 @@
 import type { ElementTable, EngineInterface } from 'claude-code'
 
 import type { Loadable, Message, RefreshState, View } from '../../types'
-import { clockTime, displayWidth, fitWidth, formatTime, plainEmoji } from '../format'
+import { clockTime, displayWidth, fitWidth, formatTime, padWidth, plainEmoji } from '../format'
 import { loadOlder, openView } from '../poller'
 import { lastTop, type MessageFrame, messageHeight, newerBelow, scrollMessages, selectMessage } from '../scroll'
 import type { SlackClient } from '../slack/client'
@@ -103,15 +103,16 @@ export function messageList(
         <Text key="name" bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'} hover={MESSAGE_HOVER}>
           {name}
         </Text>,
+        // Rows are padded to the column's width: a Button takes a press only where it draws.
         <Text key="meta" dimColor hover={MESSAGE_HOVER}>
-          {meta}
+          {padWidth(meta, frame.width - displayWidth(name))}
         </Text>,
       ]
       parts.push(
         <Box key={`row:${m.ts}`} flexDirection="column" hover={MESSAGE_HOVER}>
           <Button key={`msg:${m.ts}`} plain onPress={() => void selectMessage($, m.ts)}>
             {hasHeader && header}
-            {body.length > 0 && <Text hover={MESSAGE_HOVER}>{`${hasHeader ? '\n' : ''}${body.join('\n')}`}</Text>}
+            {body.length > 0 && <Text hover={MESSAGE_HOVER}>{`${hasHeader ? '\n' : ''}${body.map(row => padWidth(row, frame.width)).join('\n')}`}</Text>}
           </Button>
           {/* Laid over the header rather than beside it: a Button cannot hold another, and a header
               apart from the message's Button would leave the body's first row to invert under the pointer. */}
