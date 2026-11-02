@@ -13,28 +13,23 @@ It talks to Slack through the Slack MCP server you already connected to Claude C
 - **Two columns.** Left: every channel, private channel, DM and group DM you are in, channels then DMs, each by name, the open one marked `>` in the accent color, plus message search. Right: the open channel or thread.
 - **Separate scrolling.** Each column scrolls on its own. The mouse wheel moves the column under the pointer. The scroll keys move the messages. When you scroll up, new messages do not move the view; `▼ Latest · N newer` above the input goes back to the newest and follows them again.
 - **Search.** Type a query and press Enter. Slack search modifiers work (`in:`, `from:`, `after:`). `☐ From me` is a filter: turn it on (`☑`) to search only your own messages, alone or with a query. Each result shows its channel and time, then its author and text; it opens as a thread view, and `← #channel` goes to the message's place in the channel.
+
+  ![Search results for "release" with From me on](docs/images/search.png)
+
 - **Slack formatting.** `*bold*`, `_italic_`, `~strike~`, `` `code` ``, code blocks and `>` quotes are drawn as styles, without their markers. A user mention shows the name.
 - **Live view.** Only the open channel or thread is re-read, every 10 seconds by default. The header shows the refresh state (`↻ 10s · 14:05:12`, `↻ updating…`, `⏸ paused`, `⚠ failed …`).
 - **Send.** The empty input says where a message goes (`Message #general`, `Reply in thread · #general`), and the header names the channel while you type. Enter sends at once.
 - **Images.** `Attach file` takes a path (dragging a file onto the terminal types its path). `Paste image` sends the image on the clipboard (macOS only). A path to an existing image file (`/…` or `~/…`, png, jpg, gif, webp) typed or pasted into the message input becomes the attachment and leaves the text, so a terminal that pastes a clipboard image as a saved file's path attaches it too.
+
+  ![An image attached under the message input](docs/images/attach.png)
+
+  ![The message and its image in Slack](docs/images/attach-slack.png)
+
 - **Quote into Claude.** Select a message (press it again to let it go), then `Quote`. A short reference goes into the prompt box; when you send the prompt, the mod attaches the message's whole thread as context, the quoted message marked `▶`. Quoted text is marked as untrusted data.
+
+  ![A quoted thread in the prompt and Claude's summary of it](docs/images/quote.png)
+
 - **Copy link · Slack ↗.** At the right of the selected message's header. `Copy link` copies the message's Slack link; `Slack ↗` opens the message in Slack (macOS `open`). Edit or delete a message there: the Slack MCP cannot do either.
-
-## Screenshots
-
-**Quote into Claude.** `Quote` puts a reference into the prompt; Claude reads the whole thread when the prompt is sent.
-
-![A quoted thread in the prompt and Claude's summary of it](docs/images/quote.png)
-
-**Search.** `☑ From me` keeps your own messages; a DM shows whom it is with.
-
-![Search results for "release" with From me on](docs/images/search.png)
-
-**Images.** A pasted image becomes the attachment under the input, and is sent with the message.
-
-![An image attached under the message input](docs/images/attach.png)
-
-![The message and its image in Slack](docs/images/attach-slack.png)
 
 ## Requirements
 
