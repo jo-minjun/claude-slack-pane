@@ -155,9 +155,10 @@ test('selecting a message cut by the top brings its header and action bar into v
   expect((await ui.findAll({ type: 'Button' })).map(b => b.key).find(k => k?.startsWith('msg:'))).toBe(cut)
   expect((await ui.find({ key: cut }))?.text).toBe('body 36')
   await ui.press({ key: cut })
-  const row = (await ui.find({ key: `row:${tsOf(36)}` }))?.text
-  expect(row).toContain('Alice Kim')
-  expect(row).toContain('Copy link')
+  // The pressed key now holds the header, so the focus it keeps marks the header, not the first body row.
+  expect((await ui.find({ key: cut }))?.text).toContain('Alice Kim')
+  expect((await ui.find({ key: `body:${tsOf(36)}` }))?.text).toBe('body 36')
+  expect((await ui.find({ key: `row:${tsOf(36)}` }))?.text).toContain('Copy link')
   expect(await ui.find({ key: 'quote-message' })).toBeDefined()
   await ui.unmount()
 })

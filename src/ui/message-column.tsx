@@ -107,20 +107,24 @@ export function messageList(
           {meta}
         </Text>,
       ]
-      // The selected header holds its own buttons, and a Button cannot hold another: it stands outside the message's.
+      // The selected header holds its own buttons, and a Button cannot hold another: it gets a Button of
+      // its own, keyed as the message, so the focus left by the press stays on the header.
       const isHeaderApart = hasHeader && isSelected
+      const select = () => void selectMessage($, m.ts)
       const bodyText = `${hasHeader && !isHeaderApart ? '\n' : ''}${body.join('\n')}`
       parts.push(
         <Box key={`row:${m.ts}`} flexDirection="column" hover={MESSAGE_HOVER}>
           {isHeaderApart && (
             // As wide as the body's rows, so the links end where the text does.
             <Box flexDirection="row" justifyContent="space-between" width={frame.width}>
-              <Box flexDirection="row">{header}</Box>
+              <Button key={`msg:${m.ts}`} plain onPress={select}>
+                {header}
+              </Button>
               {headerLinks($, client, els, view, m)}
             </Box>
           )}
           {(body.length > 0 || (hasHeader && !isHeaderApart)) && (
-            <Button key={`msg:${m.ts}`} plain onPress={() => void selectMessage($, m.ts)}>
+            <Button key={isHeaderApart ? `body:${m.ts}` : `msg:${m.ts}`} plain onPress={select}>
               {hasHeader && !isHeaderApart && header}
               {body.length > 0 && <Text hover={MESSAGE_HOVER}>{bodyText}</Text>}
             </Button>
