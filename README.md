@@ -2,41 +2,49 @@
 
 English | [한국어](README.ko.md)
 
-A Claude Code mod that puts Slack in a pane beside the conversation. Read channels and threads, send messages and images, and quote a Slack message, with its thread, into your next prompt so Claude can read it — without leaving the terminal.
+slack-pane is a Claude Code mod that shows Slack in a pane beside the conversation. A mod is a plugin that changes how Claude Code looks and works. A pane is a screen area that Claude Code draws apart from the conversation.
 
-It talks to Slack through the Slack MCP server you already connected to Claude Code. It needs no Slack app and no token of its own.
+You can do these things without leaving the terminal:
+
+- Read channels and threads.
+- Send messages and images.
+- Quote a Slack message, with its thread, into your next prompt. Claude reads the quoted thread.
+
+slack-pane talks to Slack through the Slack MCP server connected to Claude Code. The Slack MCP server is the server that Claude Code uses to read and write Slack. Because of this, slack-pane needs no Slack app and no token of its own.
 
 ![The Slack pane: channels and DMs on the left, the open channel on the right, a selected message with its actions](docs/images/pane.png)
 
 ## Features
 
-- **Two columns.** Left: every channel, private channel, DM and group DM you are in, channels then DMs, each by name, the open one marked `>` in the accent color, plus message search. Right: the open channel or thread.
-- **Separate scrolling.** Each column scrolls on its own. The mouse wheel moves the column under the pointer. The scroll keys move the messages. When you scroll up, new messages do not move the view; `▼ Latest · N newer` above the input goes back to the newest and follows them again.
-- **Search.** Type a query and press Enter. Slack search modifiers work (`in:`, `from:`, `after:`). `☐ From me` is a filter: turn it on (`☑`) to search only your own messages, alone or with a query. Each result shows its channel and time, then its author and text; it opens as a thread view, and `← #channel` goes to the message's place in the channel.
+- **Two columns.** The left column shows every channel, private channel, DM and group DM you are in. The left column shows channels first and DMs second. Each list is sorted by name. The open channel has a `>` mark and the accent color. The message search box is also in the left column. The right column shows the open channel or thread.
+- **Separate scrolling.** The two columns scroll separately. The mouse wheel moves the column under the pointer. The scroll keys move the messages in the right column. While you are scrolled up, new messages do not move the view. When you press `▼ Latest · N newer` above the message input, the view goes back to the newest message. After that, the view follows new messages again.
+- **Search.** When you type a query in the search box and press Enter, the search starts. A query can use Slack search modifiers (`in:`, `from:`, `after:`). When you turn on the `☐ From me` filter (`☑`), the search finds only your own messages. You can use this filter without a query.
+- **Search results.** Each result shows its channel and time on the first line. Each result shows its author and text on the second line. When you press a result, the message's thread opens. When you press `← #channel` in the thread, the channel opens at the message.
 
   ![Search results for "release" with From me on](docs/images/search.png)
 
-- **Slack formatting.** `*bold*`, `_italic_`, `~strike~`, `` `code` ``, code blocks and `>` quotes are drawn as styles, without their markers. A user mention shows the name.
-- **Live view.** Only the open channel or thread is re-read, every 10 seconds by default. The header shows the refresh state (`↻ 10s · 14:05:12`, `↻ updating…`, `⏸ paused`, `⚠ failed …`).
-- **Send.** The empty input says where a message goes (`Message #general`, `Reply in thread · #general`), and the header names the channel while you type. Enter sends at once.
-- **Images.** `Attach file` takes a path (dragging a file onto the terminal types its path). `Paste image` sends the image on the clipboard (macOS only). A path to an existing image file (`/…` or `~/…`, png, jpg, gif, webp) typed or pasted into the message input becomes the attachment and leaves the text, so a terminal that pastes a clipboard image as a saved file's path attaches it too.
+- **Slack formatting.** slack-pane draws `*bold*`, `_italic_`, `~strike~`, `` `code` ``, code blocks and `>` quotes as styles, without their markers. A user mention shows the user's name.
+- **Live view.** slack-pane re-reads only the open channel or thread. The default interval is 10 seconds. The column header (the top line of the right column) shows the refresh state (`↻ 10s · 14:05:12`, `↻ updating…`, `⏸ paused`, `⚠ failed …`).
+- **Send.** When the message input is empty, the message input shows where a message goes (`Message #general`, `Reply in thread · #general`). When you press Enter, slack-pane sends the message at once.
+- **Images.** `Attach file` takes a file path. When you drag a file onto the terminal, the terminal types its path. `Paste image` attaches the image on the clipboard (macOS only). When a path in the message input points to an existing image file, slack-pane removes the path from the text and attaches the file. This applies to png, jpg, gif and webp files whose path starts with `/…` or `~/…`. Because of this, an image is attached even in a terminal that pastes a clipboard image as a temporary file's path.
 
   ![An image attached under the message input](docs/images/attach.png)
 
   ![The message and its image in Slack](docs/images/attach-slack.png)
 
-- **Quote into Claude.** Select a message (press it again to let it go), then `Quote`. A short reference goes into the prompt box; when you send the prompt, the mod attaches the message's whole thread as context, the quoted message marked `▶`. Quoted text is marked as untrusted data.
+- **Quote into Claude.** When you press a message, the message is selected. When you press the selected message again, the selection is removed. When you press `Quote` on the selected message, a short quote reference goes into the prompt input. When you send the prompt, slack-pane attaches the message's whole thread as context. slack-pane marks the quoted message's line with `▶`. slack-pane marks the quoted text as untrusted data.
 
   ![A quoted thread in the prompt and Claude's summary of it](docs/images/quote.png)
 
-- **Copy link · Slack ↗.** At the right of the selected message's header. `Copy link` copies the message's Slack link; `Slack ↗` opens the message in Slack (macOS `open`). Edit or delete a message there: the Slack MCP cannot do either.
+- **Copy link · Slack ↗.** The two buttons are at the right of the selected message's message header (the line with the author and time). When the column is narrow, the two buttons move to the action button row. `Copy link` copies the message's Slack link. `Slack ↗` opens the message in Slack (macOS `open`). You edit or delete a message in Slack. The Slack MCP does not support editing or deleting.
 
 ## Requirements
 
 - Claude Code 2.1.316 or later.
-- The Slack MCP server connected (`/mcp` lists it, by default as `plugin:slack:slack`).
-- For the pane beside the conversation: fullscreen mode and a terminal at least 110 columns wide. Narrower, the pane sits above the prompt.
-- `curl` for image upload; `osascript` (macOS) for `Paste image`.
+- A connected Slack MCP server. `/mcp` must list the server. The default name is `plugin:slack:slack`.
+- For the pane beside the conversation, you need fullscreen mode and a terminal at least 110 columns wide. When the terminal is narrower, the pane sits above the prompt.
+- Image upload needs `curl`.
+- `Paste image` needs `osascript` (macOS).
 
 ## Install
 
@@ -44,9 +52,9 @@ It talks to Slack through the Slack MCP server you already connected to Claude C
 /plugin install slack-pane --marketplace jo-minjun/claude-slack-pane
 ```
 
-Answer `y` to add the marketplace, then pick a scope.
+When Claude Code asks whether to add the marketplace, answer `y`. Then pick a scope.
 
-To run it from a clone instead:
+To run slack-pane from a clone instead, use this command:
 
 ```
 claude --plugin-dir /path/to/claude-slack-pane
@@ -56,9 +64,9 @@ claude --plugin-dir /path/to/claude-slack-pane
 
 | Command | What it does |
 | --- | --- |
-| `/slack-pane [#channel \| @user \| channel ID \| message link]` | Without an argument, opens or closes the pane. With a channel or DM, opens the pane on it. With a Slack message link, opens the message at its place in the channel, or a reply in its thread. |
-| `/slack-pane-refresh [seconds]` | Shows the refresh interval, or sets it (5–300 seconds). The value is kept across sessions. |
-| `/slack-pane-search <query>` | Opens the pane and searches messages. |
+| `/slack-pane [#channel \| @user \| channel ID \| message link]` | Without an argument, it opens or closes the pane. With a channel or DM, it opens the pane on that channel or DM. With a Slack message link, it opens the channel at the message. When the link points to a reply, it opens the reply's thread. |
+| `/slack-pane-refresh [seconds]` | Without an argument, it shows the refresh interval. With seconds, it sets the refresh interval (5–300 seconds). The value is kept across sessions. |
+| `/slack-pane-search <query>` | It opens the pane and searches messages. |
 
 ## Settings
 
@@ -68,12 +76,12 @@ claude --plugin-dir /path/to/claude-slack-pane
 
 ## Limits
 
-- The Slack MCP returns human-readable text. The mod parses it; a change in that text format can break parsing. The pane then says `Unrecognized Slack response`, and the debug log (`claude --debug`) holds the start of the response.
-- No unread markers, no emoji rendering, no reactions.
-- A user mention shows the name Slack sends with it. A user-group mention, or a user mention sent without a name, shows its ID (`@subteam^S…`, `@U…`): the Slack MCP cannot look up group names.
-- A line longer than the message or search input is cut with `…` and does not wrap, and the cursor can show past the field: Claude Code's input field draws it so.
-- No editing or deleting messages in the pane; `Slack ↗` takes you to the message.
-- Sending has no confirmation step. Check the header before pressing Enter.
+- The Slack MCP returns human-readable text. slack-pane parses this text. When the text format changes, parsing can fail. When parsing fails, the pane shows `Unrecognized Slack response`. The debug log (`claude --debug`) then holds the start of the response.
+- slack-pane does not show unread markers, emoji images or reactions.
+- A user mention shows the name that Slack sends with it. A user-group mention, or a user mention sent without a name, shows its ID (`@subteam^S…`, `@U…`). The Slack MCP cannot look up group names.
+- The message input and the search box cut a line longer than the field with `…`. The two inputs do not wrap long lines. The cursor can show past the field. slack-pane uses Claude Code's input element, so slack-pane cannot change this behavior.
+- You cannot edit or delete messages in the pane. When you press `Slack ↗`, the message opens in Slack.
+- Caution: Check the channel name in the column header before you press Enter. slack-pane sends a message at once, with no confirmation step.
 
 ## Development
 
@@ -82,7 +90,7 @@ claude plugin validate .
 claude plugin test .
 ```
 
-`tsconfig.json` extends the types Claude Code writes into `.claude-plugin/types/` once it has loaded the mod; run `tsc -p .` after a first `claude --plugin-dir .` session.
+`tsconfig.json` extends the types in `.claude-plugin/types/`. Claude Code writes the types into this folder when it first loads the mod. Because of this, run `tsc -p .` after you open one `claude --plugin-dir .` session.
 
 ## License
 
