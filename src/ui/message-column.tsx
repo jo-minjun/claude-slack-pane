@@ -97,7 +97,7 @@ export function messageList(
     if (hasHeader || body.length > 0) {
       const isSelected = m.ts === selectedTs
       const meta = messageMeta(m, clock)
-      const nameWidth = frame.width - displayWidth(meta) - (isSelected ? HEADER_LINKS_WIDTH : 0)
+      const nameWidth = frame.width - displayWidth(meta) - (isSelected ? 1 + HEADER_LINKS_WIDTH : 0)
       const name = fitWidth(`${isSelected ? '> ' : ''}${plainEmoji(m.userName)}`, Math.max(1, nameWidth))
       const header = [
         <Text key="name" bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'} hover={MESSAGE_HOVER}>
@@ -107,27 +107,18 @@ export function messageList(
           {meta}
         </Text>,
       ]
-      // The selected header holds its own buttons, and a Button cannot hold another: it gets a Button of
-      // its own, keyed as the message, so the focus left by the press stays on the header.
-      const isHeaderApart = hasHeader && isSelected
-      const select = () => void selectMessage($, m.ts)
-      const bodyText = `${hasHeader && !isHeaderApart ? '\n' : ''}${body.join('\n')}`
       parts.push(
         <Box key={`row:${m.ts}`} flexDirection="column" hover={MESSAGE_HOVER}>
-          {isHeaderApart && (
-            // As wide as the body's rows, so the links end where the text does.
-            <Box flexDirection="row" justifyContent="space-between" width={frame.width}>
-              <Button key={`msg:${m.ts}`} plain onPress={select}>
-                {header}
-              </Button>
+          <Button key={`msg:${m.ts}`} plain onPress={() => void selectMessage($, m.ts)}>
+            {hasHeader && header}
+            {body.length > 0 && <Text hover={MESSAGE_HOVER}>{`${hasHeader ? '\n' : ''}${body.join('\n')}`}</Text>}
+          </Button>
+          {/* Laid over the header rather than beside it: a Button cannot hold another, and a header
+              apart from the message's Button would leave the body's first row to invert under the pointer. */}
+          {hasHeader && isSelected && (
+            <Box position="absolute" top={0} left={frame.width - HEADER_LINKS_WIDTH}>
               {headerLinks($, client, els, view, m)}
             </Box>
-          )}
-          {(body.length > 0 || (hasHeader && !isHeaderApart)) && (
-            <Button key={isHeaderApart ? `body:${m.ts}` : `msg:${m.ts}`} plain onPress={select}>
-              {hasHeader && !isHeaderApart && header}
-              {body.length > 0 && <Text hover={MESSAGE_HOVER}>{bodyText}</Text>}
-            </Button>
           )}
           {isBarWhole && actionBar($, client, els, view, m)}
         </Box>,

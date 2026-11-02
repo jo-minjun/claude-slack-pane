@@ -16,8 +16,8 @@ const LABEL = {
 // The terminal draws a Button as `[ label ]`.
 const BUTTON_CHROME = 4
 const LINK_SEPARATOR = ' · '
-// Cells the selected message's header gives its link buttons, with a space before them.
-export const HEADER_LINKS_WIDTH = 1 + displayWidth(`${LABEL.copyLink}${LINK_SEPARATOR}${LABEL.openInSlack}`)
+// Cells the link buttons take at the end of the selected message's header.
+export const HEADER_LINKS_WIDTH = displayWidth(`${LABEL.copyLink}${LINK_SEPARATOR}${LABEL.openInSlack}`)
 
 function labels(view: View): string[] {
   return [LABEL.quoteMessage, LABEL.quoteThread, ...(view.kind === 'channel' ? [LABEL.openThread] : [])]
