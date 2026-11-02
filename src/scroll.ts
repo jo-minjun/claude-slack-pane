@@ -22,7 +22,8 @@ import {
 
 // Rows of the left column above and below its list: title, the framed search with its buttons, ▲ and ▼.
 const LEFT_CHROME_ROWS = 7
-const SEARCH_HIT_ROWS = 2
+// A search hit: its channel and time, its author and text, and a blank row after it.
+const SEARCH_HIT_ROWS = 3
 
 // What the last drawing laid out; a wheel tick is read against it.
 type PaneLayout = { leftWidth: number; leftRows: number; rightWidth: number; messageRows: number }

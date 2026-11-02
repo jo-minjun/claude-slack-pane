@@ -55,7 +55,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
     <Box flexDirection="column">
       {banner !== null && <Text color="red">{banner}</Text>}
       <Box flexDirection="row">
-        {channelColumn($, client, els, leftWidth, columnRows, channels, left, view)}
+        {channelColumn($, client, els, leftWidth, columnRows, channels, left, view, clock)}
         <Box key="right" flexDirection="column" width={rightWidth} height={columnRows} overflow="hidden">
           {view === null || frame === null ? (
             <Text dimColor>Select a channel</Text>

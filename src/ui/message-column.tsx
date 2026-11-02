@@ -11,7 +11,7 @@ import { actionBar, HEADER_LINKS_WIDTH, headerLinks } from './action-bar'
 export type Clock = { now: number; tz: number }
 
 // The engine inverts only a Button's first line under the pointer: light the whole message instead.
-const MESSAGE_HOVER = { backgroundColor: 'subtle' } as const
+export const MESSAGE_HOVER = { backgroundColor: 'subtle' } as const
 
 export function refreshText(refresh: RefreshState, interval: number, clock: Clock): string {
   if (refresh.status === 'refreshing') return '↻ updating…'
