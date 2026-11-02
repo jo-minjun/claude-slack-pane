@@ -5,7 +5,6 @@ import type { ChannelsState, ComposerState, LeftState, Loadable, Message, Refres
 
 // Bump a shape tag when that value's fields change: a reload keeps old values.
 const SHAPE = { shape: 'v1' } as const
-const SHAPE_V2 = { shape: 'v2' } as const
 
 const emptyChannels: ChannelsState = { items: [], isLoading: false, top: 0 }
 const emptyLeft: LeftState = {
@@ -19,8 +18,8 @@ const emptyMessages: Loadable<Message> = { items: [], isLoading: false }
 const emptyComposer: ComposerState = { isPathMode: false, isSending: false }
 const idle: RefreshState = { status: 'idle' }
 
-const channels = atom({ plugin: 'slack-pane', key: 'channels' } as const, emptyChannels, SHAPE_V2)
-const left = atom({ plugin: 'slack-pane', key: 'left' } as const, emptyLeft, SHAPE_V2)
+const channels = atom({ plugin: 'slack-pane', key: 'channels' } as const, emptyChannels, { shape: 'v2' } as const)
+const left = atom({ plugin: 'slack-pane', key: 'left' } as const, emptyLeft, { shape: 'v2' } as const)
 const view = atom({ plugin: 'slack-pane', key: 'view' } as const, null as View | null, SHAPE)
 const messages = atom({ plugin: 'slack-pane', key: 'messages' } as const, emptyMessages, SHAPE)
 const selectedTs = atom({ plugin: 'slack-pane', key: 'selectedTs' } as const, null as string | null)

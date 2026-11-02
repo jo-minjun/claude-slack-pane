@@ -124,3 +124,14 @@ test('older at the oldest message loads earlier ones and shows them', async ($, 
   expect(await ui.find({ key: `msg:${tsOf(9)}` })).toBeDefined()
   await ui.unmount()
 })
+
+test('wheel at the oldest message stops asking once nothing older is left', async ($, on) => {
+  const base = slack({ newest: 20 })
+  const { sent } = engine(on, (tool, args) =>
+    tool === 'slack_read_channel' && args.latest !== undefined ? ok({ messages: 'Channel: #c0 (C000)\n\n', pagination_info: '' }) : base(tool, args),
+  )
+  const ui = await openFirstChannel($)
+  for (let i = 0; i < 5; i += 1) await wheel($, -100, RIGHT_COLUMN)
+  expect(count(sent, 'slack_read_channel')).toBe(2)
+  await ui.unmount()
+})

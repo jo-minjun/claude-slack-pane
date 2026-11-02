@@ -5,7 +5,7 @@ import { myUserId, runSearch } from '../actions'
 import { splitQuery } from '../commands'
 import { channelLabel, firstLine } from '../format'
 import { openView } from '../poller'
-import { leftPageSize, scrollLeft } from '../scroll'
+import { leftItemRows, leftList, leftPageSize, scrollLeft } from '../scroll'
 import type { SlackClient } from '../slack/client'
 import { updateLeft } from '../state'
 
@@ -28,10 +28,9 @@ export function channelColumn(
 ) {
   const { Box, Text, Button } = els
   const Input = 'Input' in els ? (els as ElementTable<'terminal'>).Input : undefined
-  const isSearch = left.mode === 'search'
+  const { isSearch, list, top } = leftList(left, channels)
   const pageSize = leftPageSize(rows, isSearch)
-  const list = isSearch ? left.results : channels
-  const top = isSearch ? left.top : channels.top
+  const pageRows = pageSize * leftItemRows(isSearch)
   const hasMoreLoaded = top + pageSize < list.items.length
   const search = async (query: string, filters?: string) => {
     const split = splitQuery(query)
@@ -57,7 +56,7 @@ export function channelColumn(
           <Button key="clear" label="× Clear" onPress={() => void updateLeft($, l => ({ ...l, mode: 'channels' as const, top: 0 }))} />
         )}
       </Box>
-      {top > 0 && <Button key="more-up" label="▲ More" onPress={() => void scrollLeft($, client, -pageSize)} />}
+      {top > 0 && <Button key="more-up" label="▲ More" onPress={() => void scrollLeft($, client, -pageRows)} />}
       {list.isLoading && <Text dimColor>Loading…</Text>}
       {list.error !== undefined && <Text color="red">⚠ {list.error}</Text>}
       {isSearch && !list.isLoading && list.items.length === 0 && list.error === undefined && <Text dimColor>No results</Text>}
@@ -86,7 +85,7 @@ export function channelColumn(
               onPress={() => void openView($, client, { kind: 'channel', channelId: channel.id, label: channelLabel(channel) })}
             />
           ))}
-      {(hasMoreLoaded || list.cursor !== undefined) && <Button key="more-down" label="▼ More" onPress={() => void scrollLeft($, client, pageSize)} />}
+      {(hasMoreLoaded || list.cursor !== undefined) && <Button key="more-down" label="▼ More" onPress={() => void scrollLeft($, client, pageRows)} />}
     </Box>
   )
 }

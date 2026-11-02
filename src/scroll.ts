@@ -1,6 +1,6 @@
 import type { EngineInterface, UiScrollInput } from 'claude-code'
 
-import type { Message } from '../types'
+import type { ChannelsState, LeftState, Message } from '../types'
 import { loadChannels, runSearch } from './actions'
 import { splitQuery } from './commands'
 import { rowsFor } from './format'
@@ -22,121 +22,108 @@ const LEFT_CHROME_ROWS = 5
 const SEARCH_HIT_ROWS = 2
 
 // What the last drawing laid out; a wheel tick is read against it.
-export type PaneLayout = { leftWidth: number; leftRows: number; rightWidth: number; messageRows: number }
+type PaneLayout = { leftWidth: number; leftRows: number; rightWidth: number; messageRows: number }
 let layout: PaneLayout | undefined
 export function setLayout(next: PaneLayout): void {
   layout = next
 }
 
+// The list the left column shows now, and its first shown item.
+export function leftList(left: LeftState, channels: ChannelsState) {
+  const isSearch = left.mode === 'search'
+  return { isSearch, list: isSearch ? left.results : channels, top: isSearch ? left.top : channels.top }
+}
+
+export function leftItemRows(isSearch: boolean): number {
+  return isSearch ? SEARCH_HIT_ROWS : 1
+}
+
 export function leftPageSize(rows: number, isSearch: boolean): number {
-  return Math.max(1, Math.floor((rows - LEFT_CHROME_ROWS) / (isSearch ? SEARCH_HIT_ROWS : 1)))
+  return Math.max(1, Math.floor((rows - LEFT_CHROME_ROWS) / leftItemRows(isSearch)))
 }
 
 // The blank row the message list draws between two messages.
 export const MESSAGE_GAP_ROWS = 1
 
-export function messageRows(m: Message, width: number): number {
+function messageRows(m: Message, width: number): number {
   return 1 + rowsFor(m.text, width) + (m.hasFile ? 1 : 0) + MESSAGE_GAP_ROWS
+}
+
+// How many items from `from`, walking by `step`, fit `rows`; the first one always counts.
+function fill(length: number, from: number, step: 1 | -1, rows: number, heightAt: (index: number) => number): number {
+  let count = 0
+  let used = 0
+  for (let i = from; i >= 0 && i < length; i += step) {
+    const need = heightAt(i)
+    if (count > 0 && used + need > rows) break
+    used += need
+    count += 1
+  }
+  return count
+}
+
+function windowEnd(items: Message[], bottomTs: string | null): number {
+  const anchored = bottomTs === null ? -1 : items.findIndex(m => m.ts === bottomTs)
+  return anchored === -1 ? items.length : anchored + 1
 }
 
 // The messages that fit `rows` ending at `bottomTs` (the newest when null), as [start, end).
 export function messageWindow(items: Message[], bottomTs: string | null, rows: number, width: number) {
-  const anchored = bottomTs === null ? -1 : items.findIndex(m => m.ts === bottomTs)
-  const end = anchored === -1 ? items.length : anchored + 1
-  let start = end
-  let used = 0
-  while (start > 0) {
-    const need = messageRows(items[start - 1]!, width)
-    if (start < end && used + need > rows) break
-    used += need
-    start -= 1
-  }
-  return { start, end }
-}
-
-// The smallest window end that still fills the rows from the oldest message.
-function firstFullEnd(items: Message[], rows: number, width: number): number {
-  let end = 0
-  let used = 0
-  while (end < items.length) {
-    const need = messageRows(items[end]!, width)
-    if (end > 0 && used + need > rows) break
-    used += need
-    end += 1
-  }
-  return end
-}
-
-let loadingOlder = false
-async function loadOlderOnce($: EngineInterface, client: SlackClient): Promise<void> {
-  if (loadingOlder) return
-  loadingOlder = true
-  try {
-    await loadOlder($, client)
-  } finally {
-    loadingOlder = false
-  }
+  const end = windowEnd(items, bottomTs)
+  return { start: end - fill(items.length, end - 1, -1, rows, i => messageRows(items[i]!, width)), end }
 }
 
 // Moves the right column by `by` rows, negative toward older messages.
 export async function scrollMessages($: EngineInterface, client: SlackClient, by: number): Promise<void> {
-  const view = await readView($)
-  if (!layout || !view || by === 0) return
+  if (!layout || by === 0) return
   const { messageRows: rows, rightWidth: width } = layout
-  const before = await readMessages($)
-  const bottomTs = await readMessageBottomTs($)
-  const first = messageWindow(before.items, bottomTs, rows, width)
-  const isAtOldest = by < 0 && first.start === 0 && view.kind === 'channel'
-  const isAtNewest = by > 0 && first.end === before.items.length && view.kind === 'thread' && before.cursor !== undefined
-  if (before.items.length > 0 && (isAtOldest || isAtNewest)) await loadOlderOnce($, client)
-  const items = (await readMessages($)).items
-  let { end } = messageWindow(items, bottomTs, rows, width)
-  // Move whole messages, at least one, without passing `by` rows: a page move must not skip any.
-  const fits = (moved: number, need: number) => moved === 0 || moved + need <= Math.abs(by)
-  let moved = 0
-  if (by < 0) {
-    while (end > 1 && moved < -by && fits(moved, messageRows(items[end - 1]!, width))) {
-      moved += messageRows(items[end - 1]!, width)
-      end -= 1
-    }
-    end = Math.max(end, firstFullEnd(items, rows, width))
-  } else {
-    while (end < items.length && moved < by && fits(moved, messageRows(items[end]!, width))) {
-      moved += messageRows(items[end]!, width)
-      end += 1
-    }
+  const [view, before, bottomTs] = await Promise.all([readView($), readMessages($), readMessageBottomTs($)])
+  if (!view) return
+  const shown = messageWindow(before.items, bottomTs, rows, width)
+  const isAtOldest = by < 0 && shown.start === 0 && view.kind === 'channel'
+  const isAtNewest = by > 0 && shown.end === before.items.length && view.kind === 'thread' && before.cursor !== undefined
+  let items = before.items
+  if (items.length > 0 && (isAtOldest || isAtNewest)) {
+    await loadOlder($, client)
+    items = (await readMessages($)).items
   }
+  const heights = items.map(m => messageRows(m, width))
+  const heightAt = (i: number) => heights[i]!
+  const step = by < 0 ? -1 : 1
+  const anchor = windowEnd(items, bottomTs)
+  // Whole messages, at least one, without passing `by` rows: a page move must not skip any.
+  const moved = fill(items.length, by < 0 ? anchor - 1 : anchor, step, Math.abs(by), heightAt)
+  let end = anchor + step * moved
+  if (by < 0) end = Math.max(end, fill(items.length, 0, 1, rows, heightAt))
   const next = end >= items.length ? null : items[end - 1]!.ts
-  await updateMessageBottomTs($, () => next)
+  if (next !== bottomTs) await updateMessageBottomTs($, () => next)
 }
 
-// Moves the left list by `count` items, loading the next page at its end.
-export async function scrollLeft($: EngineInterface, client: SlackClient, count: number): Promise<void> {
-  if (!layout || count === 0) return
-  const left = await readLeft($)
-  const channels = await readChannels($)
-  const isSearch = left.mode === 'search'
-  const before = isSearch ? left.results : channels
-  const top = isSearch ? left.top : channels.top
+// Moves the left list by `by` rows, loading the next page at its end.
+export async function scrollLeft($: EngineInterface, client: SlackClient, by: number): Promise<void> {
+  if (!layout || by === 0) return
+  const [left, channels] = await Promise.all([readLeft($), readChannels($)])
+  const { isSearch, list, top } = leftList(left, channels)
+  const count = Math.sign(by) * Math.ceil(Math.abs(by) / leftItemRows(isSearch))
   const size = leftPageSize(layout.leftRows, isSearch)
-  if (count > 0 && top + count + size > before.items.length && before.cursor !== undefined && !before.isLoading) {
-    if (isSearch) await runSearch($, client, left.query, splitQuery(left.query).keywords, left.filters, before.cursor)
-    else await loadChannels($, client, before.cursor)
+  let length = list.items.length
+  if (count > 0 && top + count + size > length && list.cursor !== undefined && !list.isLoading) {
+    if (isSearch) {
+      await runSearch($, client, left.query, splitQuery(left.query).keywords, left.filters, list.cursor)
+      length = (await readLeft($)).results.items.length
+    } else {
+      await loadChannels($, client, list.cursor)
+      length = (await readChannels($)).items.length
+    }
   }
-  const length = (isSearch ? (await readLeft($)).results : await readChannels($)).items.length
   const next = Math.min(Math.max(0, top + count), Math.max(0, length - size))
+  if (next === top) return
   if (isSearch) await updateLeft($, l => ({ ...l, top: next }))
   else await updateChannels($, c => ({ ...c, top: next }))
 }
 
 // A wheel tick moves the column under the pointer; the scroll keys move the messages.
 export async function scrollPane($: EngineInterface, client: SlackClient, e: UiScrollInput): Promise<void> {
-  if (!layout) return
-  if (e.pointer !== undefined && e.pointer.column < layout.leftWidth) {
-    const isSearch = (await readLeft($)).mode === 'search'
-    const count = Math.ceil(Math.abs(e.by) / (isSearch ? SEARCH_HIT_ROWS : 1))
-    await scrollLeft($, client, Math.sign(e.by) * count)
-  } else {
-    await scrollMessages($, client, e.by)
-  }
+  const isOverLeft = layout !== undefined && e.pointer !== undefined && e.pointer.column < layout.leftWidth
+  await (isOverLeft ? scrollLeft($, client, e.by) : scrollMessages($, client, e.by))
 }

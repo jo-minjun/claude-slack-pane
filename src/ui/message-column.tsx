@@ -18,7 +18,7 @@ export function refreshText(refresh: RefreshState, interval: number, clock: Cloc
     : `↻ ${interval}s · ${clockTime(refresh.lastSuccessAt, clock.tz)}`
 }
 
-export function messageMeta(m: Message, clock: Clock): string {
+function messageMeta(m: Message, clock: Clock): string {
   const replies = m.replyCount > 0 ? `  ${m.replyCount} replies` : ''
   return `  ${formatTime(m.ts, clock.now, clock.tz)}${replies}`
 }
@@ -32,7 +32,7 @@ export function headerRow(
 ) {
   const { Box, Text, Button } = els
   return (
-    <Box flexDirection="row" justifyContent="space-between">
+    <Box flexDirection="row" justifyContent="space-between" flexShrink={0}>
       {view.kind === 'thread' ? (
         <Box flexDirection="row" gap={1}>
           <Button

@@ -59,8 +59,8 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
           {view === null ? (
             <Text dimColor>Select a channel</Text>
           ) : (
-            <Box flexDirection="column" height={columnRows}>
-              <Box flexShrink={0}>{headerRow($, client, els, view, refreshText(refresh, interval, clock))}</Box>
+            <>
+              {headerRow($, client, els, view, refreshText(refresh, interval, clock))}
               <Box key="messages" flexDirection="column" flexGrow={1} flexShrink={1} justifyContent="flex-end" overflow="hidden">
                 {messageList($, client, els, view, messages, selectedTs, bottomTs, rightWidth, messageRows, clock)}
               </Box>
@@ -68,7 +68,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
                 {selected !== undefined && actionBar($, client, els, view, selected)}
                 {composerBox($, client, els, view, composer)}
               </Box>
-            </Box>
+            </>
           )}
         </Box>
       </Box>

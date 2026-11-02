@@ -139,12 +139,18 @@ export async function openView($: EngineInterface, client: SlackClient, v: View)
   if (generation === viewGeneration) await restartTimer($, client)
 }
 
+let isLoadingOlder = false
+// The oldest message a channel read found nothing before: asking again would repeat that read.
+let exhaustedTs: string | undefined
+
 export async function loadOlder($: EngineInterface, client: SlackClient): Promise<void> {
   const generation = viewGeneration
   const v = await readView($)
   const current = await readMessages($)
   const oldest = current.items[0]
-  if (!v || !oldest) return
+  if (!v || !oldest || isLoadingOlder) return
+  if (v.kind === 'channel' && oldest.ts === exhaustedTs) return
+  isLoadingOlder = true
   try {
     const page =
       v.kind === 'thread'
@@ -159,8 +165,11 @@ export async function loadOlder($: EngineInterface, client: SlackClient): Promis
         ? { ...m, items: appendNew(m.items, items), cursor: page.nextCursor }
         : { ...m, items: [...items, ...m.items] },
     )
+    if (v.kind === 'channel' && (await readMessages($)).items[0]?.ts === oldest.ts) exhaustedTs = oldest.ts
   } catch (error) {
     await reportError($, error)
+  } finally {
+    isLoadingOlder = false
   }
 }
 
