@@ -29,7 +29,8 @@ function slack(state: { newest: number }): McpAnswer {
   }
 }
 
-const BODY_ROWS = 20
+// Ten rows of messages under the header, its rule and the composer.
+const BODY_ROWS = 22
 const pane = {
   plugin: 'slack-pane',
   component: 'Pane',

@@ -21,8 +21,9 @@ import { headerRow, messageList, refreshText } from './message-column'
 
 const MIN_LEFT = 22
 const LEFT_SHARE = 0.3
-// Header, ▲ Older, and the composer with its frame.
-const RIGHT_RESERVED_ROWS = 9
+// Header and its rule, ▲ Older and the blank under it, the blank above the composer, and the composer with its frame.
+const RIGHT_RESERVED_ROWS = 12
+const RULE = '─'
 
 export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, client: SlackClient) {
   const els = $.ui.resolve(e)
@@ -60,10 +61,13 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
           ) : (
             <>
               {headerRow($, client, els, view, refreshText(refresh, interval, clock))}
+              <Box flexShrink={0}>
+                <Text dimColor>{RULE.repeat(rightWidth)}</Text>
+              </Box>
               <Box key="messages" flexDirection="column" flexGrow={1} flexShrink={1} justifyContent="flex-end" overflow="hidden">
                 {messageList($, client, els, view, messages, selectedTs, bottomTs, rightWidth, messageRows, clock)}
               </Box>
-              <Box flexDirection="column" flexShrink={0}>
+              <Box flexDirection="column" flexShrink={0} marginTop={1}>
                 {composerBox($, client, els, view, composer)}
               </Box>
             </>

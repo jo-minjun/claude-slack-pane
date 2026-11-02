@@ -79,7 +79,11 @@ export function messageList(
   const pressOlder = () => (view.kind === 'thread' ? loadOlder($, client) : scrollMessages($, client, -rows))
   return (
     <Box flexDirection="column">
-      {canLoadOlder && <Button key="older" label={view.kind === 'thread' ? '▼ More replies' : '▲ Older'} onPress={() => void pressOlder()} />}
+      {canLoadOlder && (
+        <Box marginBottom={1}>
+          <Button key="older" label={view.kind === 'thread' ? '▼ More replies' : '▲ Older'} onPress={() => void pressOlder()} />
+        </Box>
+      )}
       {messages.isLoading && <Text dimColor>Loading…</Text>}
       {messages.error !== undefined && <Text color="red">⚠ {messages.error}</Text>}
       {!messages.isLoading && messages.items.length === 0 && messages.error === undefined && <Text dimColor>No messages</Text>}
