@@ -148,14 +148,32 @@ test('the action bar is drawn under the selected message', async ($, on) => {
   await ui.unmount()
 })
 
-test('selecting the top message keeps it and its action bar in view', async ($, on) => {
+test('selecting a message cut by the top brings its header and action bar into view', async ($, on) => {
   engine(on, slack({ newest: 40 }))
   const ui = await openFirstChannel($)
-  const top = (await ui.findAll({ type: 'Button' })).map(b => b.key).find(k => k?.startsWith('msg:'))
-  expect(top).toBe(`msg:${tsOf(37)}`)
-  await ui.press({ key: `msg:${tsOf(37)}` })
-  expect(await ui.find({ key: `msg:${tsOf(37)}` })).toBeDefined()
+  const cut = `msg:${tsOf(36)}`
+  expect((await ui.findAll({ type: 'Button' })).map(b => b.key).find(k => k?.startsWith('msg:'))).toBe(cut)
+  expect((await ui.find({ key: cut }))?.text).toBe('body 36')
+  await ui.press({ key: cut })
+  expect((await ui.find({ key: cut }))?.text).toContain('Alice Kim')
   expect(await ui.find({ key: 'quote-message' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a message taller than the window can be read to its end', async ($, on) => {
+  const long = Array.from({ length: 30 }, (_, i) => `line ${i}`).join('\n')
+  const base = slack({ newest: 40 })
+  engine(on, (tool, args) =>
+    tool === 'slack_read_channel' && args.latest === undefined
+      ? ok({ messages: `Channel: #c0 (C000)\n\n=== Message from Alice Kim (U0FAKE0001) at 2026-10-30 11:02:26 KST === \nMessage TS: ${tsOf(1)}\n${long}`, pagination_info: '' })
+      : base(tool, args),
+  )
+  const ui = await openFirstChannel($)
+  expect((await ui.find({ key: `msg:${tsOf(1)}` }))?.text).toContain('line 29')
+  await wheel($, -100, RIGHT_COLUMN)
+  const top = (await ui.find({ key: `msg:${tsOf(1)}` }))?.text
+  expect(top).toContain('Alice Kim')
+  expect(top).not.toContain('line 29')
   await ui.unmount()
 })
 

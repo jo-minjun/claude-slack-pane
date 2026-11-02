@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { displayWidth, fitWidth, rowsFor } from '../src/format'
+import { displayWidth, fitWidth, wrapText } from '../src/format'
 import { createMcpClient } from '../src/slack/mcp-client'
 import { CHANNEL } from './fixtures/channel'
 import { PROFILE } from './fixtures/profile'
@@ -41,10 +41,11 @@ test('display width counts wide characters as two cells', () => {
 
 // Counting characters instead of cells, or ignoring word wrap, drew more messages than fit and cut the newest off.
 test('message rows count wide characters and wrap at spaces', () => {
-  expect(rowsFor('가나다라마바사아자차', 10)).toBe(2)
-  expect(rowsFor('aaa bbbbb ccccc', 8)).toBe(3)
-  expect(rowsFor('abcdefghijklmnopqrst', 8)).toBe(3)
-  expect(rowsFor('one\n\ntwo', 40)).toBe(3)
+  expect(wrapText('가나다라마바사아자차', 10)).toEqual(['가나다라마', '바사아자차'])
+  expect(wrapText('aaa bbbbb ccccc', 8)).toEqual(['aaa', 'bbbbb', 'ccccc'])
+  expect(wrapText('abcdefghijklmnopqrst', 8)).toEqual(['abcdefgh', 'ijklmnop', 'qrst'])
+  expect(wrapText('one\n\ntwo', 40)).toEqual(['one', '', 'two'])
+  expect(wrapText('    ◦ 들여쓴 줄', 40)).toEqual(['    ◦ 들여쓴 줄'])
 })
 
 const LONG_LIST = `## My Channels (showing 2)

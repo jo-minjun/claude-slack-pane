@@ -1,11 +1,11 @@
 import type { ElementTable, EngineInterface } from 'claude-code'
 
 import type { Loadable, Message, RefreshState, View } from '../../types'
-import { clockTime, formatTime } from '../format'
+import { clockTime, displayWidth, fitWidth, formatTime } from '../format'
 import { loadOlder, openView } from '../poller'
-import { MESSAGE_GAP_ROWS, messageHeights, messageWindow, newerHidden, scrollMessages, selectMessage } from '../scroll'
+import { lastTop, type MessageFrame, messageHeight, newerBelow, scrollMessages, selectMessage } from '../scroll'
 import type { SlackClient } from '../slack/client'
-import { updateMessageBottomTs } from '../state'
+import { updateMessageTop } from '../state'
 import { actionBar } from './action-bar'
 
 export type Clock = { now: number; tz: number }
@@ -61,6 +61,8 @@ export function headerRow(
   )
 }
 
+const blankRows = (count: number) => Array.from({ length: count }, () => ' ').join('\n')
+
 export function messageList(
   $: EngineInterface,
   client: SlackClient,
@@ -68,16 +70,57 @@ export function messageList(
   view: View,
   messages: Loadable<Message>,
   selectedTs: string | null,
-  bottomTs: string | null,
-  width: number,
-  rows: number,
+  frame: MessageFrame,
   clock: Clock,
 ) {
   const { Box, Text, Button } = els
-  const canLoadOlder = messages.items.length > 0 && (view.kind === 'channel' || messages.cursor !== undefined)
-  const { start, end } = messageWindow(messages.items, bottomTs, rows, messageHeights(messages.items, view, selectedTs, width))
-  const shown = messages.items.slice(start, end)
-  const pressOlder = () => (view.kind === 'thread' ? loadOlder($, client) : scrollMessages($, client, -rows))
+  const { items } = messages
+  const canLoadOlder = items.length > 0 && (view.kind === 'channel' || messages.cursor !== undefined)
+  const pressOlder = () => (view.kind === 'thread' ? loadOlder($, client) : scrollMessages($, client, -frame.rows))
+  const bottom = frame.top + frame.rows
+  // Only the rows inside the window are drawn, so a message can show from any of its rows.
+  const drawn = items.flatMap((m, i) => {
+    const start = frame.pos[i]!
+    const height = messageHeight(frame, i)
+    const hasGap = i < items.length - 1
+    if (start >= bottom || start + height + (hasGap ? 1 : 0) <= frame.top) return []
+    const textEnd = start + 1 + frame.body[i]!.length
+    const from = Math.max(frame.top, start) - start
+    const to = Math.min(bottom, textEnd) - start
+    const body = frame.body[i]!.slice(Math.max(0, from - 1), Math.max(0, to - 1))
+    const hasHeader = from === 0 && to > 0
+    const barEnd = textEnd + frame.bar[i]!
+    const barShown = Math.max(0, Math.min(bottom, barEnd) - Math.max(frame.top, textEnd))
+    const isBarWhole = barShown > 0 && textEnd >= frame.top && barEnd <= bottom
+    const gap = start + height
+    const parts = []
+    if (hasHeader || body.length > 0) {
+      const meta = messageMeta(m, clock)
+      const name = fitWidth(`${m.ts === selectedTs ? '> ' : ''}${m.userName}`, Math.max(1, frame.width - displayWidth(meta)))
+      parts.push(
+        <Box key={`row:${m.ts}`} flexDirection="column" hover={MESSAGE_HOVER}>
+          <Button key={`msg:${m.ts}`} plain onPress={() => void selectMessage($, m.ts)}>
+            {hasHeader && (
+              <Text bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'} hover={MESSAGE_HOVER}>
+                {name}
+              </Text>
+            )}
+            {hasHeader && (
+              <Text dimColor hover={MESSAGE_HOVER}>
+                {meta}
+              </Text>
+            )}
+            {body.length > 0 && <Text hover={MESSAGE_HOVER}>{`${hasHeader ? '\n' : ''}${body.join('\n')}`}</Text>}
+          </Button>
+          {isBarWhole && actionBar($, client, els, view, m)}
+        </Box>,
+      )
+    }
+    // A bar cut by the window's edge keeps its rows blank: a Button cannot be drawn in part.
+    if (barShown > 0 && !isBarWhole) parts.push(<Text key={`bar:${m.ts}`}>{blankRows(barShown)}</Text>)
+    if (hasGap && gap >= frame.top && gap < bottom) parts.push(<Text key={`gap:${m.ts}`}> </Text>)
+    return parts
+  })
   return (
     <Box flexDirection="column">
       {canLoadOlder && (
@@ -87,43 +130,21 @@ export function messageList(
       )}
       {messages.isLoading && <Text dimColor>Loading…</Text>}
       {messages.error !== undefined && <Text color="red">⚠ {messages.error}</Text>}
-      {!messages.isLoading && messages.items.length === 0 && messages.error === undefined && <Text dimColor>No messages</Text>}
-      <Box flexDirection="column" gap={MESSAGE_GAP_ROWS}>
-        {shown.map(m => (
-          <Box key={`row:${m.ts}`} flexDirection="column" hover={MESSAGE_HOVER}>
-            <Button key={`msg:${m.ts}`} plain onPress={() => void selectMessage($, m.ts)}>
-              <Text bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'} hover={MESSAGE_HOVER}>
-                {`${m.ts === selectedTs ? '> ' : ''}${m.userName}`}
-              </Text>
-              <Text dimColor hover={MESSAGE_HOVER}>
-                {messageMeta(m, clock)}
-              </Text>
-              <Text hover={MESSAGE_HOVER}>{`\n${m.text === '' ? ' ' : m.text}${m.hasFile ? '\n[file]' : ''}`}</Text>
-            </Button>
-            {m.ts === selectedTs && actionBar($, client, els, view, m)}
-          </Box>
-        ))}
-      </Box>
+      {!messages.isLoading && items.length === 0 && messages.error === undefined && <Text dimColor>No messages</Text>}
+      {drawn}
     </Box>
   )
 }
 
 // The row above the composer: blank while the newest messages show, else a way back to them.
-export function latestRow(
-  $: EngineInterface,
-  client: SlackClient,
-  els: ElementTable,
-  view: View,
-  messages: Loadable<Message>,
-  bottomTs: string | null,
-) {
+export function latestRow($: EngineInterface, client: SlackClient, els: ElementTable, view: View, frame: MessageFrame) {
   const { Text, Button } = els
   const isAnchored = view.kind === 'channel' && view.anchorTs !== undefined
-  const hidden = newerHidden(messages.items, bottomTs)
-  if (!isAnchored && hidden === 0) return <Text> </Text>
+  if (!isAnchored && frame.top >= lastTop(frame)) return <Text> </Text>
+  const newer = newerBelow(frame)
   const press = () =>
     isAnchored
       ? openView($, client, { kind: 'channel', channelId: view.channelId, label: view.label })
-      : updateMessageBottomTs($, () => null)
-  return <Button key="latest" label={hidden > 0 ? `▼ Latest · ${hidden} newer` : '▼ Latest'} onPress={() => void press()} />
+      : updateMessageTop($, () => null)
+  return <Button key="latest" label={newer > 0 ? `▼ Latest · ${newer} newer` : '▼ Latest'} onPress={() => void press()} />
 }

@@ -34,9 +34,13 @@ export function clockTime(ms: number, tzMinutes: number): string {
 // Hangul, CJK, full-width forms and most emoji take two terminal cells.
 const WIDE = /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F300}-\u{1FAFF}]/u
 
+export function charWidth(char: string): number {
+  return WIDE.test(char) ? 2 : 1
+}
+
 export function displayWidth(text: string): number {
   let width = 0
-  for (const char of text) width += WIDE.test(char) ? 2 : 1
+  for (const char of text) width += charWidth(char)
   return width
 }
 
@@ -45,7 +49,7 @@ export function fitWidth(text: string, cells: number): string {
   let out = ''
   let width = 0
   for (const char of text) {
-    const w = WIDE.test(char) ? 2 : 1
+    const w = charWidth(char)
     if (width + w > cells - 1) break
     out += char
     width += w
@@ -77,8 +81,39 @@ export function packedRows(widths: number[], width: number): number {
   return rows
 }
 
-export function rowsFor(text: string, width: number): number {
+// Splits text into rows of at most `width` cells, at spaces where it can, inside a word where it must.
+// Leading spaces stay; the spaces at a break are dropped.
+export function wrapText(text: string, width: number): string[] {
   const cells = Math.max(1, width)
-  // The terminal wraps a line at its spaces, as Text's default wrap does.
-  return text.split('\n').reduce((sum, line) => sum + packedRows(line.split(' ').map(displayWidth), cells), 0)
+  const rows: string[] = []
+  for (const source of text.split('\n')) {
+    let row = ''
+    let used = 0
+    const breakRow = () => {
+      rows.push(row.trimEnd())
+      row = ''
+      used = 0
+    }
+    for (const token of source.match(/ +|[^ ]+/g) ?? []) {
+      const w = displayWidth(token)
+      if (used + w <= cells) {
+        row += token
+        used += w
+      } else if (token.startsWith(' ')) {
+        breakRow()
+      } else if (w <= cells) {
+        breakRow()
+        row = token
+        used = w
+      } else {
+        for (const char of token) {
+          if (used + charWidth(char) > cells) breakRow()
+          row += char
+          used += charWidth(char)
+        }
+      }
+    }
+    rows.push(row)
+  }
+  return rows
 }

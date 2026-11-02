@@ -1,7 +1,7 @@
 import type { EngineInterface } from 'claude-code'
 import { atom, read, update } from 'claude-code'
 
-import type { ChannelsState, ComposerState, LeftState, Loadable, Message, RefreshState, View } from '../types'
+import type { ChannelsState, ComposerState, LeftState, Loadable, Message, MessageAnchor, RefreshState, View } from '../types'
 
 // Bump a shape tag when that value's fields change: a reload keeps old values.
 const SHAPE = { shape: 'v1' } as const
@@ -24,8 +24,8 @@ const left = atom({ plugin: 'slack-pane', key: 'left' } as const, emptyLeft, { s
 const view = atom({ plugin: 'slack-pane', key: 'view' } as const, null as View | null, SHAPE)
 const messages = atom({ plugin: 'slack-pane', key: 'messages' } as const, emptyMessages, SHAPE)
 const selectedTs = atom({ plugin: 'slack-pane', key: 'selectedTs' } as const, null as string | null)
-// The newest message the right column shows at its bottom; null follows the latest.
-const messageBottomTs = atom({ plugin: 'slack-pane', key: 'messageBottomTs' } as const, null as string | null)
+// Where the right column's window starts; null keeps it on the newest messages.
+const messageTop = atom({ plugin: 'slack-pane', key: 'messageTop' } as const, null as MessageAnchor | null, SHAPE)
 const composer = atom({ plugin: 'slack-pane', key: 'composer' } as const, emptyComposer, SHAPE)
 const refresh = atom({ plugin: 'slack-pane', key: 'refresh' } as const, idle, SHAPE)
 const intervalSeconds = atom({ plugin: 'slack-pane', key: 'intervalSeconds' } as const, 10)
@@ -65,11 +65,11 @@ export function readSelectedTs($: $) {
 export function updateSelectedTs($: $, fn: (value: string | null) => string | null) {
   return update($, selectedTs, fn)
 }
-export function readMessageBottomTs($: $) {
-  return read($, messageBottomTs)
+export function readMessageTop($: $) {
+  return read($, messageTop)
 }
-export function updateMessageBottomTs($: $, fn: (value: string | null) => string | null) {
-  return update($, messageBottomTs, fn)
+export function updateMessageTop($: $, fn: (value: MessageAnchor | null) => MessageAnchor | null) {
+  return update($, messageTop, fn)
 }
 export function readComposer($: $) {
   return read($, composer)

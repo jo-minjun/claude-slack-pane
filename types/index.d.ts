@@ -29,6 +29,8 @@ export type View =
       threadTs: string
       back: { anchorTs?: string }
     }
+// The first message row the right column shows: `skip` rows into message `ts`.
+export type MessageAnchor = { ts: string; skip: number }
 export type Loadable<T> = {
   items: T[]
   cursor?: string
@@ -73,7 +75,7 @@ declare module 'claude-code' {
       view: Shaped<View | null>
       messages: Shaped<Loadable<Message>>
       selectedTs: string | null
-      messageBottomTs: string | null
+      messageTop: Shaped<MessageAnchor | null>
       composer: Shaped<ComposerState>
       refresh: Shaped<RefreshState>
       intervalSeconds: number

@@ -1,7 +1,7 @@
 import type { EngineInterface, RenderInput } from 'claude-code'
 
 import { tzOffsetMinutes } from '../format'
-import { setLayout } from '../scroll'
+import { messageFrame, setLayout } from '../scroll'
 import type { SlackClient } from '../slack/client'
 import {
   readBanner,
@@ -9,7 +9,7 @@ import {
   readComposer,
   readIntervalSeconds,
   readLeft,
-  readMessageBottomTs,
+  readMessageTop,
   readMessages,
   readRefresh,
   readSelectedTs,
@@ -32,14 +32,14 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
   const rows = e.props.scroll.bodyRows
   const leftWidth = Math.max(MIN_LEFT, Math.floor(columns * LEFT_SHARE))
   const rightWidth = Math.max(10, columns - leftWidth)
-  const [banner, channels, left, view, messages, selectedTs, bottomTs, refresh, interval, composer] = await Promise.all([
+  const [banner, channels, left, view, messages, selectedTs, messageTop, refresh, interval, composer] = await Promise.all([
     readBanner($),
     readChannels($),
     readLeft($),
     readView($),
     readMessages($),
     readSelectedTs($),
-    readMessageBottomTs($),
+    readMessageTop($),
     readRefresh($),
     readIntervalSeconds($),
     readComposer($),
@@ -49,6 +49,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
   const messageRows = Math.max(3, columnRows - RIGHT_RESERVED_ROWS)
   setLayout({ leftWidth, leftRows: columnRows, rightWidth, messageRows })
   const clock = { now: await $.clock.now(), tz: tzOffsetMinutes() }
+  const frame = view === null ? null : messageFrame(messages.items, view, selectedTs, messageTop, messageRows, rightWidth)
 
   return (
     <Box flexDirection="column">
@@ -56,7 +57,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
       <Box flexDirection="row">
         {channelColumn($, client, els, leftWidth, columnRows, channels, left, view)}
         <Box key="right" flexDirection="column" width={rightWidth} height={columnRows} overflow="hidden">
-          {view === null ? (
+          {view === null || frame === null ? (
             <Text dimColor>Select a channel</Text>
           ) : (
             <>
@@ -65,10 +66,10 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
                 <Text dimColor>{RULE.repeat(rightWidth)}</Text>
               </Box>
               <Box key="messages" flexDirection="column" flexGrow={1} flexShrink={1} justifyContent="flex-end" overflow="hidden">
-                {messageList($, client, els, view, messages, selectedTs, bottomTs, rightWidth, messageRows, clock)}
+                {messageList($, client, els, view, messages, selectedTs, frame, clock)}
               </Box>
               <Box flexDirection="column" flexShrink={0}>
-                {latestRow($, client, els, view, messages, bottomTs)}
+                {latestRow($, client, els, view, frame)}
                 {composerBox($, client, els, view, composer)}
               </Box>
             </>
