@@ -1,5 +1,7 @@
 # slack-pane
 
+English | [한국어](README.ko.md)
+
 A Claude Code mod that puts Slack in a pane beside the conversation. Read channels and threads, send messages and images, and quote a Slack message, with its thread, into your next prompt so Claude can read it — without leaving the terminal.
 
 It talks to Slack through the Slack MCP server you already connected to Claude Code. It needs no Slack app and no token of its own.
