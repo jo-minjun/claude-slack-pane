@@ -201,7 +201,10 @@ Message TS: 1793300000.000100
   const ui = await $.ui.mount({ ...pane(), surface: 'terminal' })
   const row = (await ui.find({ key: 'msg:1793300000.000100' }))!.text!.split('\n')[1]!
   expect(row.trimEnd()).toBe('Deploy done: v1.2 today')
-  expect((await ui.findAll({ type: 'Text' })).some(t => t.text === '\nDeploy' && t.props.bold === true)).toBe(true)
+  const texts = await ui.findAll({ type: 'Text' })
+  expect(texts.some(t => t.text === 'Deploy' && t.props.bold === true)).toBe(true)
+  // Under the pointer the engine inverts a Text's first line only: a piece led by a break would stay plain.
+  expect(texts.filter(t => t.text !== '\n' && String(t.text).startsWith('\n'))).toEqual([])
   await ui.unmount()
 })
 

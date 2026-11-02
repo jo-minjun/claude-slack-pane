@@ -8,9 +8,11 @@ import { openView } from '../poller'
 import { channelRows, leftItemRows, leftList, leftPageSize, scrollLeft } from '../scroll'
 import type { SlackClient } from '../slack/client'
 import { updateLeft } from '../state'
-import { MESSAGE_HOVER } from './message-column'
 import type { Clock } from './message-header'
 import { CLEAR_LABEL, fromMeLabel } from './search-frame'
+
+// A search hit lights whole under the pointer: the area its press takes.
+const HIT_HOVER = { backgroundColor: 'subtle' } as const
 
 // A button draws `[ ` and ` ]` around its label; the column keeps one cell of padding.
 const BUTTON_CHROME = 5
@@ -109,7 +111,7 @@ function searchHit(
   const text = firstLine(plainText(hit.text), Math.max(1, cells - displayWidth(author)))
   const key = `${hit.channelId}:${hit.ts}`
   return [
-    <Box key={`hit-row:${key}`} flexDirection="column" width={cells} hover={MESSAGE_HOVER}>
+    <Box key={`hit-row:${key}`} flexDirection="column" width={cells} hover={HIT_HOVER}>
       <Button
         key={`hit:${key}`}
         plain
@@ -123,15 +125,17 @@ function searchHit(
           }, hit.ts)
         }
       >
-        <Text bold color="suggestion" hover={MESSAGE_HOVER}>
+        <Text bold color="suggestion" hover={HIT_HOVER}>
           {channel}
         </Text>
-        <Text dimColor hover={MESSAGE_HOVER}>
+        <Text dimColor hover={HIT_HOVER}>
           {padWidth('', cells - displayWidth(channel) - displayWidth(time))}
           {time}
         </Text>
-        <Text dimColor hover={MESSAGE_HOVER}>{`\n${author}`}</Text>
-        <Text hover={MESSAGE_HOVER}>{padWidth(text, cells - displayWidth(author))}</Text>
+        {/* A break of its own: the hover and the pointer's inversion paint a Text's first line only. */}
+        <Text>{'\n'}</Text>
+        <Text dimColor hover={HIT_HOVER}>{author}</Text>
+        <Text hover={HIT_HOVER}>{padWidth(text, cells - displayWidth(author))}</Text>
       </Button>
     </Box>,
     <Text key={`hit-gap:${key}`}> </Text>,

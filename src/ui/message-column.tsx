@@ -11,9 +11,6 @@ import { actionBar, HEADER_LINKS_WIDTH, headerLinks } from './action-bar'
 import { type Clock, headerName, linksFitHeader, messageMeta } from './message-header'
 
 
-// The engine inverts only a Button's first line under the pointer: light the whole message instead.
-export const MESSAGE_HOVER = { backgroundColor: 'subtle' } as const
-
 export function refreshText(refresh: RefreshState, interval: number, clock: Clock): string {
   if (refresh.status === 'refreshing') return '↻ updating…'
   if (refresh.status === 'paused') return '⏸ paused'
@@ -65,20 +62,24 @@ function bodyTexts(Text: ElementTable['Text'], rows: StyledRow[], hasHeader: boo
   return rows.flatMap((row, r) => {
     const used = row.reduce((sum, piece) => sum + displayWidth(piece.text), 0)
     const pieces = [...row, { text: ' '.repeat(Math.max(0, width - used)) }].filter(piece => piece.text !== '')
-    const breaksBefore = hasHeader || r > 0
-    return pieces.map((piece, k) => (
-      <Text
-        key={`text:${r}:${k}`}
-        hover={MESSAGE_HOVER}
-        {...('bold' in piece ? { bold: true } : {})}
-        {...('italic' in piece ? { italic: true } : {})}
-        {...('strike' in piece ? { strikethrough: true } : {})}
-        {...('dim' in piece ? { dimColor: true } : {})}
-        {...('code' in piece ? { color: CODE_COLOR } : {})}
-      >
-        {`${k === 0 && breaksBefore ? '\n' : ''}${piece.text}`}
-      </Text>
-    ))
+    // A break of its own: under the pointer the engine inverts each Text's first line only, so a piece
+    // led by a break would stay plain amid the inverted message.
+    const lineBreak = hasHeader || r > 0 ? [<Text key={`break:${r}`}>{'\n'}</Text>] : []
+    return [
+      ...lineBreak,
+      ...pieces.map((piece, k) => (
+        <Text
+          key={`text:${r}:${k}`}
+          {...('bold' in piece ? { bold: true } : {})}
+          {...('italic' in piece ? { italic: true } : {})}
+          {...('strike' in piece ? { strikethrough: true } : {})}
+          {...('dim' in piece ? { dimColor: true } : {})}
+          {...('code' in piece ? { color: CODE_COLOR } : {})}
+        >
+          {piece.text}
+        </Text>
+      )),
+    ]
   })
 }
 
@@ -122,16 +123,16 @@ export function messageList(
       const nameWidth = frame.width - displayWidth(meta) - (hasHeaderLinks ? 1 + HEADER_LINKS_WIDTH : 0)
       const name = fitWidth(headerName(m, isSelected), Math.max(1, nameWidth))
       const header = [
-        <Text key="name" bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'} hover={MESSAGE_HOVER}>
+        <Text key="name" bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'}>
           {name}
         </Text>,
         // Rows are padded to the column's width: a Button takes a press only where it draws.
-        <Text key="meta" dimColor hover={MESSAGE_HOVER}>
+        <Text key="meta" dimColor>
           {padWidth(meta, frame.width - displayWidth(name))}
         </Text>,
       ]
       parts.push(
-        <Box key={`row:${m.ts}`} flexDirection="column" hover={MESSAGE_HOVER}>
+        <Box key={`row:${m.ts}`} flexDirection="column">
           <Button key={`msg:${m.ts}`} plain onPress={() => void selectMessage($, m.ts)}>
             {hasHeader && header}
             {bodyTexts(Text, body, hasHeader, frame.width)}
