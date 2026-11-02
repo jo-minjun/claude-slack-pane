@@ -137,6 +137,16 @@ test('refresh status texts', async ($, on) => {
   await ui.unmount()
 })
 
+test('the open channel is drawn in the accent color', async ($, on) => {
+  engine(on, slack)
+  await start($)
+  await run($, 'slack-pane', '#general')
+  const ui = await $.ui.mount({ ...pane(), surface: 'terminal' })
+  expect((await ui.find({ key: 'ch:C0FAKE0001' }))?.props.variant).toBe('primary')
+  expect((await ui.find({ key: 'ch:C0FAKE0002' }))?.props.variant).toBeUndefined()
+  await ui.unmount()
+})
+
 test('left column width', async ($, on) => {
   engine(on, slack)
   await start($)

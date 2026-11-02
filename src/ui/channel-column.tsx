@@ -76,6 +76,7 @@ export function channelColumn(
                 <Button
                   key={`ch:${row.channel.id}`}
                   label={firstLine(`${view?.channelId === row.channel.id ? '> ' : ''}${channelLabel(row.channel)}`, width - BUTTON_CHROME)}
+                  {...(view?.channelId === row.channel.id ? { variant: 'primary' as const } : {})}
                   onPress={() => void openView($, client, { kind: 'channel', channelId: row.channel.id, label: channelLabel(row.channel) })}
                 />
               ),
