@@ -1,8 +1,9 @@
 import type { ElementTable, EngineInterface } from 'claude-code'
 
 import type { Loadable, Message, RefreshState, View } from '../../types'
-import { clockTime, formatTime, rowsFor } from '../format'
+import { clockTime, formatTime } from '../format'
 import { loadOlder, openView } from '../poller'
+import { messageWindow, scrollMessages } from '../scroll'
 import type { SlackClient } from '../slack/client'
 import { updateSelectedTs } from '../state'
 
@@ -20,20 +21,6 @@ export function refreshText(refresh: RefreshState, interval: number, clock: Cloc
 export function messageHeader(m: Message, clock: Clock, isSelected: boolean): string {
   const replies = m.replyCount > 0 ? `  ${m.replyCount} replies` : ''
   return `${isSelected ? '> ' : ''}${m.userName} ${formatTime(m.ts, clock.now, clock.tz)}${replies}`
-}
-
-// Newest messages that fit the rows, oldest first.
-export function visibleMessages(items: Message[], rows: number, width: number): Message[] {
-  const shown: Message[] = []
-  let used = 0
-  for (let i = items.length - 1; i >= 0; i -= 1) {
-    const m = items[i]!
-    const need = 1 + rowsFor(m.text, width - 2) + (m.hasFile ? 1 : 0)
-    if (shown.length > 0 && used + need > rows) break
-    shown.unshift(m)
-    used += need
-  }
-  return shown
 }
 
 export function headerRow(
@@ -77,16 +64,19 @@ export function messageList(
   view: View,
   messages: Loadable<Message>,
   selectedTs: string | null,
+  bottomTs: string | null,
   width: number,
   rows: number,
   clock: Clock,
 ) {
   const { Box, Text, Button } = els
   const canLoadOlder = messages.items.length > 0 && (view.kind === 'channel' || messages.cursor !== undefined)
-  const shown = visibleMessages(messages.items, rows, width)
+  const { start, end } = messageWindow(messages.items, bottomTs, rows, width)
+  const shown = messages.items.slice(start, end)
+  const pressOlder = () => (view.kind === 'thread' ? loadOlder($, client) : scrollMessages($, client, -rows))
   return (
     <Box flexDirection="column">
-      {canLoadOlder && <Button key="older" label={view.kind === 'thread' ? '▼ More replies' : '▲ Older'} onPress={() => void loadOlder($, client)} />}
+      {canLoadOlder && <Button key="older" label={view.kind === 'thread' ? '▼ More replies' : '▲ Older'} onPress={() => void pressOlder()} />}
       {messages.isLoading && <Text dimColor>Loading…</Text>}
       {messages.error !== undefined && <Text color="red">⚠ {messages.error}</Text>}
       {!messages.isLoading && messages.items.length === 0 && messages.error === undefined && <Text dimColor>No messages</Text>}

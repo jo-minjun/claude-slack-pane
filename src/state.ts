@@ -5,24 +5,27 @@ import type { ChannelsState, ComposerState, LeftState, Loadable, Message, Refres
 
 // Bump a shape tag when that value's fields change: a reload keeps old values.
 const SHAPE = { shape: 'v1' } as const
+const SHAPE_V2 = { shape: 'v2' } as const
 
-const emptyChannels: ChannelsState = { items: [], isLoading: false, page: 0 }
+const emptyChannels: ChannelsState = { items: [], isLoading: false, top: 0 }
 const emptyLeft: LeftState = {
   mode: 'channels',
   query: '',
   filters: '',
-  page: 0,
+  top: 0,
   results: { items: [], isLoading: false },
 }
 const emptyMessages: Loadable<Message> = { items: [], isLoading: false }
 const emptyComposer: ComposerState = { isPathMode: false, isSending: false }
 const idle: RefreshState = { status: 'idle' }
 
-const channels = atom({ plugin: 'slack-pane', key: 'channels' } as const, emptyChannels, SHAPE)
-const left = atom({ plugin: 'slack-pane', key: 'left' } as const, emptyLeft, SHAPE)
+const channels = atom({ plugin: 'slack-pane', key: 'channels' } as const, emptyChannels, SHAPE_V2)
+const left = atom({ plugin: 'slack-pane', key: 'left' } as const, emptyLeft, SHAPE_V2)
 const view = atom({ plugin: 'slack-pane', key: 'view' } as const, null as View | null, SHAPE)
 const messages = atom({ plugin: 'slack-pane', key: 'messages' } as const, emptyMessages, SHAPE)
 const selectedTs = atom({ plugin: 'slack-pane', key: 'selectedTs' } as const, null as string | null)
+// The newest message the right column shows at its bottom; null follows the latest.
+const messageBottomTs = atom({ plugin: 'slack-pane', key: 'messageBottomTs' } as const, null as string | null)
 const composer = atom({ plugin: 'slack-pane', key: 'composer' } as const, emptyComposer, SHAPE)
 const refresh = atom({ plugin: 'slack-pane', key: 'refresh' } as const, idle, SHAPE)
 const intervalSeconds = atom({ plugin: 'slack-pane', key: 'intervalSeconds' } as const, 10)
@@ -61,6 +64,12 @@ export function readSelectedTs($: $) {
 }
 export function updateSelectedTs($: $, fn: (value: string | null) => string | null) {
   return update($, selectedTs, fn)
+}
+export function readMessageBottomTs($: $) {
+  return read($, messageBottomTs)
+}
+export function updateMessageBottomTs($: $, fn: (value: string | null) => string | null) {
+  return update($, messageBottomTs, fn)
 }
 export function readComposer($: $) {
   return read($, composer)

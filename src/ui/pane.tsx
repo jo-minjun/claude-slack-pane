@@ -1,6 +1,7 @@
 import type { EngineInterface, RenderInput } from 'claude-code'
 
 import { tzOffsetMinutes } from '../format'
+import { setLayout } from '../scroll'
 import type { SlackClient } from '../slack/client'
 import {
   readBanner,
@@ -8,6 +9,7 @@ import {
   readComposer,
   readIntervalSeconds,
   readLeft,
+  readMessageBottomTs,
   readMessages,
   readRefresh,
   readSelectedTs,
@@ -28,17 +30,22 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
   const rows = e.props.scroll.bodyRows
   const leftWidth = Math.max(MIN_LEFT, Math.floor(columns * LEFT_SHARE))
   const rightWidth = Math.max(10, columns - leftWidth)
-  const [banner, channels, left, view, messages, selectedTs, refresh, interval, composer] = await Promise.all([
+  const [banner, channels, left, view, messages, selectedTs, bottomTs, refresh, interval, composer] = await Promise.all([
     readBanner($),
     readChannels($),
     readLeft($),
     readView($),
     readMessages($),
     readSelectedTs($),
+    readMessageBottomTs($),
     readRefresh($),
     readIntervalSeconds($),
     readComposer($),
   ])
+  // Each column is clipped to the body so the pane itself never scrolls: one window would move both.
+  const columnRows = Math.max(1, rows - (banner === null ? 0 : 1))
+  const messageRows = Math.max(3, columnRows - RIGHT_RESERVED_ROWS)
+  setLayout({ leftWidth, leftRows: columnRows, rightWidth, messageRows })
   const selected = messages.items.find(m => m.ts === selectedTs)
   const clock = { now: await $.clock.now(), tz: tzOffsetMinutes() }
 
@@ -46,16 +53,20 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
     <Box flexDirection="column">
       {banner !== null && <Text color="red">{banner}</Text>}
       <Box flexDirection="row">
-        {channelColumn($, client, els, leftWidth, rows, channels, left, view)}
-        <Box key="right" flexDirection="column" width={rightWidth}>
+        {channelColumn($, client, els, leftWidth, columnRows, channels, left, view)}
+        <Box key="right" flexDirection="column" width={rightWidth} height={columnRows} overflow="hidden">
           {view === null ? (
             <Text dimColor>Select a channel</Text>
           ) : (
-            <Box flexDirection="column">
-              {headerRow($, client, els, view, refreshText(refresh, interval, clock))}
-              {messageList($, client, els, view, messages, selectedTs, rightWidth, Math.max(3, rows - RIGHT_RESERVED_ROWS), clock)}
-              {selected !== undefined && actionBar($, client, els, view, selected)}
-              {composerBox($, client, els, view, composer)}
+            <Box flexDirection="column" height={columnRows}>
+              <Box flexShrink={0}>{headerRow($, client, els, view, refreshText(refresh, interval, clock))}</Box>
+              <Box key="messages" flexDirection="column" flexGrow={1} flexShrink={1} justifyContent="flex-end" overflow="hidden">
+                {messageList($, client, els, view, messages, selectedTs, bottomTs, rightWidth, messageRows, clock)}
+              </Box>
+              <Box flexDirection="column" flexShrink={0}>
+                {selected !== undefined && actionBar($, client, els, view, selected)}
+                {composerBox($, client, els, view, composer)}
+              </Box>
             </Box>
           )}
         </Box>

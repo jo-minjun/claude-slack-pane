@@ -17,7 +17,7 @@ export async function loadChannels($: EngineInterface, client: SlackClient, curs
     const page = await client.listChannels(cursor)
     await updateChannels($, c => ({
       items: cursor === undefined ? page.items : [...c.items, ...page.items],
-      page: cursor === undefined ? 0 : c.page,
+      top: cursor === undefined ? 0 : c.top,
       isLoading: false,
       ...(page.nextCursor === undefined ? {} : { cursor: page.nextCursor }),
     }))
@@ -68,7 +68,7 @@ export async function runSearch(
     mode: 'search' as const,
     query,
     filters,
-    page: cursor === undefined ? 0 : l.page,
+    top: cursor === undefined ? 0 : l.top,
     results: { ...(cursor === undefined ? { items: [] } : l.results), isLoading: true },
   }))
   try {

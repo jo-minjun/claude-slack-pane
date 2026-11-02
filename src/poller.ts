@@ -12,6 +12,7 @@ import {
   readView,
   updateComposer,
   updateIntervalSeconds,
+  updateMessageBottomTs,
   updateMessages,
   updateRefresh,
   updateSelectedTs,
@@ -129,6 +130,7 @@ export async function openView($: EngineInterface, client: SlackClient, v: View)
   const generation = viewGeneration
   await updateView($, () => v)
   await updateSelectedTs($, () => null)
+  await updateMessageBottomTs($, () => null)
   // A draft or attachment belongs to the view it was made in: never send it elsewhere.
   await removeTemp($, (await readComposer($)).attachment)
   await updateComposer($, () => ({ draft: '', isPathMode: false, isSending: false }))

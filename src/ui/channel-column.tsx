@@ -1,14 +1,14 @@
 import type { ElementTable, EngineInterface } from 'claude-code'
 
 import type { ChannelsState, LeftState, SearchHit, View } from '../../types'
-import { loadChannels, myUserId, runSearch } from '../actions'
+import { myUserId, runSearch } from '../actions'
 import { splitQuery } from '../commands'
 import { channelLabel, firstLine } from '../format'
 import { openView } from '../poller'
+import { leftPageSize, scrollLeft } from '../scroll'
 import type { SlackClient } from '../slack/client'
-import { updateChannels, updateLeft } from '../state'
+import { updateLeft } from '../state'
 
-const HEADER_ROWS = 5
 // A button draws `[ ` and ` ]` around its label; the column keeps one cell of padding.
 const BUTTON_CHROME = 5
 
@@ -28,32 +28,18 @@ export function channelColumn(
 ) {
   const { Box, Text, Button } = els
   const Input = 'Input' in els ? (els as ElementTable<'terminal'>).Input : undefined
-  const pageSize = Math.max(1, rows - HEADER_ROWS)
   const isSearch = left.mode === 'search'
+  const pageSize = leftPageSize(rows, isSearch)
   const list = isSearch ? left.results : channels
-  const page = isSearch ? left.page : channels.page
-  const shown = list.items.slice(page * pageSize, (page + 1) * pageSize)
-  const hasMoreLoaded = (page + 1) * pageSize < list.items.length
-  const setPage = (next: number) =>
-    isSearch ? updateLeft($, l => ({ ...l, page: next })) : updateChannels($, c => ({ ...c, page: next }))
-  const pressMoreDown = async () => {
-    if (!hasMoreLoaded && list.cursor !== undefined) {
-      if (isSearch) {
-        const { keywords } = splitQuery(left.query)
-        await runSearch($, client, left.query, keywords, left.filters, list.cursor)
-      } else {
-        await loadChannels($, client, list.cursor)
-      }
-    }
-    await setPage(page + 1)
-  }
+  const top = isSearch ? left.top : channels.top
+  const hasMoreLoaded = top + pageSize < list.items.length
   const search = async (query: string, filters?: string) => {
     const split = splitQuery(query)
     await runSearch($, client, query, split.keywords, filters ?? split.filters)
   }
 
   return (
-    <Box key="left" flexDirection="column" width={width} paddingRight={1}>
+    <Box key="left" flexDirection="column" width={width} height={rows} overflow="hidden" paddingRight={1}>
       <Text bold>Channels</Text>
       {Input && (
         <Input key="search" placeholder="Search messages" value={left.query} submitLabel="search" onSubmit={(value: string) => void search(value.trim())} />
@@ -68,15 +54,15 @@ export function channelColumn(
           }}
         />
         {isSearch && (
-          <Button key="clear" label="× Clear" onPress={() => void updateLeft($, l => ({ ...l, mode: 'channels' as const, page: 0 }))} />
+          <Button key="clear" label="× Clear" onPress={() => void updateLeft($, l => ({ ...l, mode: 'channels' as const, top: 0 }))} />
         )}
       </Box>
-      {page > 0 && <Button key="more-up" label="▲ More" onPress={() => void setPage(page - 1)} />}
+      {top > 0 && <Button key="more-up" label="▲ More" onPress={() => void scrollLeft($, client, -pageSize)} />}
       {list.isLoading && <Text dimColor>Loading…</Text>}
       {list.error !== undefined && <Text color="red">⚠ {list.error}</Text>}
       {isSearch && !list.isLoading && list.items.length === 0 && list.error === undefined && <Text dimColor>No results</Text>}
       {isSearch
-        ? (shown as SearchHit[]).map(hit => (
+        ? left.results.items.slice(top, top + pageSize).map(hit => (
             <Button
               key={`hit:${hit.channelId}:${hit.ts}`}
               onPress={() =>
@@ -93,14 +79,14 @@ export function channelColumn(
               <Text>{`\n${firstLine(hit.text, width - BUTTON_CHROME)}`}</Text>
             </Button>
           ))
-        : channels.items.slice(page * pageSize, (page + 1) * pageSize).map(channel => (
+        : channels.items.slice(top, top + pageSize).map(channel => (
             <Button
               key={`ch:${channel.id}`}
               label={firstLine(`${view?.channelId === channel.id ? '> ' : ''}${channelLabel(channel)}`, width - BUTTON_CHROME)}
               onPress={() => void openView($, client, { kind: 'channel', channelId: channel.id, label: channelLabel(channel) })}
             />
           ))}
-      {(hasMoreLoaded || list.cursor !== undefined) && <Button key="more-down" label="▼ More" onPress={() => void pressMoreDown()} />}
+      {(hasMoreLoaded || list.cursor !== undefined) && <Button key="more-down" label="▼ More" onPress={() => void scrollLeft($, client, pageSize)} />}
     </Box>
   )
 }

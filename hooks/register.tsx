@@ -3,6 +3,7 @@ import type { Register } from 'claude-code'
 import { attachPromptQuotes, PANE_ID } from '../src/actions'
 import { runPaneCommand, runRefreshCommand, runSearchCommand } from '../src/commands'
 import { restartTimer, stopTimer } from '../src/poller'
+import { scrollPane } from '../src/scroll'
 import { slackClient } from '../src/slack/mcp-client'
 import { renderPane } from '../src/ui/pane'
 import { updateIntervalSeconds, updatePaneOpen } from '../src/state'
@@ -50,6 +51,12 @@ export const register: Register = (on, options) => {
   }))
 
   on('ui.render', { component: 'Pane', requestId: PANE_ID }, ($, e) => renderPane($, e, slackClient($, server)))
+
+  // Answered without next: the engine's window would move both columns together.
+  on('ui.scroll', { component: 'Pane', requestId: PANE_ID }, async ($, e) => {
+    await scrollPane($, slackClient($, server), e)
+    return {}
+  })
 
   on('prompt.submit', async ($, e, next) => {
     if (e.command !== undefined) return next(e)

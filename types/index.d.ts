@@ -35,12 +35,13 @@ export type Loadable<T> = {
   isLoading: boolean
   error?: string
 }
-export type ChannelsState = Loadable<Channel> & { page: number }
+// `top`: index of the first item the column shows.
+export type ChannelsState = Loadable<Channel> & { top: number }
 export type LeftState = {
   mode: 'channels' | 'search'
   query: string
   filters: string
-  page: number
+  top: number
   results: Loadable<SearchHit>
 }
 export type Attachment = {
@@ -71,6 +72,7 @@ declare module 'claude-code' {
       view: Shaped<View | null>
       messages: Shaped<Loadable<Message>>
       selectedTs: string | null
+      messageBottomTs: string | null
       composer: Shaped<ComposerState>
       refresh: Shaped<RefreshState>
       intervalSeconds: number

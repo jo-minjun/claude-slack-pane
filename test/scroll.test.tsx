@@ -1,0 +1,126 @@
+import type { Engine } from 'claude-code/testing'
+import { expect, test } from 'claude-code/testing'
+
+import { PROFILE } from './fixtures/profile'
+import { count, engine, ok, run, start, type McpAnswer } from './harness'
+
+const CHANNEL_COUNT = 30
+const channelId = (i: number) => `C${String(i).padStart(3, '0')}`
+const CHANNELS = `## My Channels (showing ${CHANNEL_COUNT})
+
+${Array.from({ length: CHANNEL_COUNT }, (_, i) => `### #c${i}\n- **ID:** ${channelId(i)}\n- **Type:** Public Channel\n- **Archived:** No\n`).join('\n')}`
+
+const tsOf = (i: number) => `${1793300000 + i * 60}.000100`
+// Newest first, as the Slack MCP server answers.
+const channelText = (from: number, to: number) =>
+  `Channel: #c0 (C000)\n\n${Array.from({ length: to - from }, (_, k) => to - 1 - k)
+    .map(i => `=== Message from Alice Kim (U0FAKE0001) at 2026-10-30 11:02:26 KST === \nMessage TS: ${tsOf(i)}\nbody ${i}`)
+    .join('\n\n')}`
+
+function slack(state: { newest: number }): McpAnswer {
+  return (tool, args) => {
+    if (tool === 'slack_list_user_channels') return ok({ result: CHANNELS })
+    if (tool === 'slack_read_user_profile') return ok({ result: PROFILE })
+    if (tool === 'slack_read_channel') {
+      if (args.latest !== undefined) return ok({ messages: channelText(0, 10), pagination_info: '' })
+      return ok({ messages: channelText(state.newest - 20, state.newest), pagination_info: '' })
+    }
+    return ok({ result: 'ok' })
+  }
+}
+
+const BODY_ROWS = 20
+const pane = {
+  plugin: 'slack-pane',
+  component: 'Pane',
+  requestId: 'slack',
+  surface: 'terminal',
+  props: { title: 'Slack', isFocused: true, bodyColumns: 90, placement: 'dock', scroll: { offset: 0, bodyRows: BODY_ROWS }, view: {} },
+} as const
+
+const LEFT_COLUMN = 3
+const RIGHT_COLUMN = 60
+
+function wheel($: Engine, by: number, column?: number) {
+  return $.ui.scroll({
+    component: 'Pane',
+    requestId: 'slack',
+    offset: 0,
+    by,
+    bodyRows: BODY_ROWS,
+    contentRows: BODY_ROWS,
+    origin: { kind: 'person' },
+    ...(column === undefined ? {} : { pointer: { column, row: 5 } }),
+  })
+}
+
+async function openFirstChannel($: Engine) {
+  await start($)
+  await run($, 'slack-pane')
+  const ui = await $.ui.mount(pane)
+  await ui.press({ key: `ch:${channelId(0)}` })
+  return ui
+}
+
+test('wheel over one column leaves the other where it was', async ($, on) => {
+  engine(on, slack({ newest: 40 }))
+  const ui = await openFirstChannel($)
+  expect(await ui.find({ key: `msg:${tsOf(39)}` })).toBeDefined()
+
+  await wheel($, 3, LEFT_COLUMN)
+  expect(await ui.find({ key: `ch:${channelId(0)}` })).toBeUndefined()
+  expect(await ui.find({ key: `ch:${channelId(3)}` })).toBeDefined()
+  expect(await ui.find({ key: `msg:${tsOf(39)}` })).toBeDefined()
+
+  await wheel($, -6, RIGHT_COLUMN)
+  expect(await ui.find({ key: `msg:${tsOf(39)}` })).toBeUndefined()
+  expect(await ui.find({ key: `msg:${tsOf(36)}` })).toBeDefined()
+  expect(await ui.find({ key: `ch:${channelId(3)}` })).toBeDefined()
+  await ui.unmount()
+})
+
+test('scroll keys without a pointer move the messages', async ($, on) => {
+  engine(on, slack({ newest: 40 }))
+  const ui = await openFirstChannel($)
+  await wheel($, -2)
+  expect(await ui.find({ key: `msg:${tsOf(39)}` })).toBeUndefined()
+  expect(await ui.find({ key: `ch:${channelId(0)}` })).toBeDefined()
+  await wheel($, 100)
+  expect(await ui.find({ key: `msg:${tsOf(39)}` })).toBeDefined()
+  await ui.unmount()
+})
+
+test('the left list stops at its last full page', async ($, on) => {
+  engine(on, slack({ newest: 40 }))
+  const ui = await openFirstChannel($)
+  await wheel($, 100, LEFT_COLUMN)
+  expect(await ui.find({ key: `ch:${channelId(CHANNEL_COUNT - 1)}` })).toBeDefined()
+  expect(await ui.find({ key: 'more-down' })).toBeUndefined()
+  await wheel($, -100, LEFT_COLUMN)
+  expect(await ui.find({ key: `ch:${channelId(0)}` })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a new message keeps a scrolled-up view in place', async ($, on) => {
+  const state = { newest: 40 }
+  const { clock } = engine(on, slack(state))
+  const ui = await openFirstChannel($)
+  await wheel($, -6, RIGHT_COLUMN)
+  const shown = (await ui.findAll({ type: 'Button' })).map(b => b.key).filter(k => k?.startsWith('msg:'))
+  state.newest = 41
+  await clock.advance(10_000)
+  const after = (await ui.findAll({ type: 'Button' })).map(b => b.key).filter(k => k?.startsWith('msg:'))
+  expect(after).toEqual(shown)
+  await wheel($, 100, RIGHT_COLUMN)
+  expect(await ui.find({ key: `msg:${tsOf(40)}` })).toBeDefined()
+  await ui.unmount()
+})
+
+test('older at the oldest message loads earlier ones and shows them', async ($, on) => {
+  const { sent } = engine(on, slack({ newest: 30 }))
+  const ui = await openFirstChannel($)
+  for (let i = 0; i < 5 && !(await ui.find({ key: `msg:${tsOf(9)}` })); i += 1) await ui.press({ key: 'older' })
+  expect(count(sent, 'slack_read_channel')).toBe(2)
+  expect(await ui.find({ key: `msg:${tsOf(9)}` })).toBeDefined()
+  await ui.unmount()
+})
