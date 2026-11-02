@@ -6,7 +6,7 @@ import { reportError } from './errors'
 import { channelLabel } from './format'
 import { openView, setIntervalSeconds } from './poller'
 import type { SlackClient } from './slack/client'
-import { readIntervalSeconds, readPaneOpen } from './state'
+import { readIntervalSeconds, readLeft, readPaneOpen, updateLeft } from './state'
 
 const MIN_INTERVAL = 5
 const MAX_INTERVAL = 300
@@ -27,6 +27,19 @@ export function splitQuery(query: string): { keywords: string[]; filters: string
   const filters = tokens.filter(token => /^[a-z_]+:/.test(token))
   const keywords = tokens.filter(token => !/^[a-z_]+:/.test(token))
   return { keywords, filters: filters.join(' ') }
+}
+
+// Searches `query`, adding a filter for my own messages when `fromMe`; with nothing to search, shows the channels.
+export async function searchMessages($: EngineInterface, client: SlackClient, query: string, fromMe: boolean): Promise<void> {
+  const { keywords, filters } = splitQuery(query)
+  const myId = fromMe ? await myUserId($, client) : undefined
+  if (fromMe && myId === undefined) return
+  const all = [filters, myId === undefined ? '' : `from:<@${myId}>`].filter(f => f !== '').join(' ')
+  if (keywords.length === 0 && all === '') {
+    await updateLeft($, l => ({ ...l, mode: 'channels' as const, query, top: 0 }))
+    return
+  }
+  await runSearch($, client, query, keywords, all)
 }
 
 export function parseInterval(arg: string): number | undefined {
@@ -83,8 +96,7 @@ export async function runSearchCommand($: EngineInterface, client: SlackClient, 
   const query = args.trim()
   if (query === '') return 'Usage: /slack-pane-search <query>'
   await openPane($, client)
-  const { keywords, filters } = splitQuery(query)
-  await runSearch($, client, query, keywords, filters)
+  await searchMessages($, client, query, (await readLeft($)).fromMe)
   return `Searching: ${query}`
 }
 

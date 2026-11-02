@@ -41,6 +41,7 @@ export type LeftState = {
   mode: 'channels' | 'search'
   query: string
   filters: string
+  fromMe: boolean
   top: number
   results: Loadable<SearchHit>
 }

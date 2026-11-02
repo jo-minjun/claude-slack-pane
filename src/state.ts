@@ -11,6 +11,7 @@ const emptyLeft: LeftState = {
   mode: 'channels',
   query: '',
   filters: '',
+  fromMe: false,
   top: 0,
   results: { items: [], isLoading: false },
 }
@@ -19,7 +20,7 @@ const emptyComposer: ComposerState = { isPathMode: false, isSending: false }
 const idle: RefreshState = { status: 'idle' }
 
 const channels = atom({ plugin: 'slack-pane', key: 'channels' } as const, emptyChannels, { shape: 'v2' } as const)
-const left = atom({ plugin: 'slack-pane', key: 'left' } as const, emptyLeft, { shape: 'v2' } as const)
+const left = atom({ plugin: 'slack-pane', key: 'left' } as const, emptyLeft, { shape: 'v3' } as const)
 const view = atom({ plugin: 'slack-pane', key: 'view' } as const, null as View | null, SHAPE)
 const messages = atom({ plugin: 'slack-pane', key: 'messages' } as const, emptyMessages, SHAPE)
 const selectedTs = atom({ plugin: 'slack-pane', key: 'selectedTs' } as const, null as string | null)

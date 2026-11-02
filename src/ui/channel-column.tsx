@@ -1,8 +1,7 @@
 import type { ElementTable, EngineInterface } from 'claude-code'
 
 import type { ChannelsState, LeftState, SearchHit, View } from '../../types'
-import { myUserId, runSearch } from '../actions'
-import { splitQuery } from '../commands'
+import { searchMessages } from '../commands'
 import { channelLabel, firstLine } from '../format'
 import { openView } from '../poller'
 import { leftItemRows, leftList, leftPageSize, scrollLeft } from '../scroll'
@@ -32,9 +31,11 @@ export function channelColumn(
   const pageSize = leftPageSize(rows, isSearch)
   const pageRows = pageSize * leftItemRows(isSearch)
   const hasMoreLoaded = top + pageSize < list.items.length
-  const search = async (query: string, filters?: string) => {
-    const split = splitQuery(query)
-    await runSearch($, client, query, split.keywords, filters ?? split.filters)
+  const toggleFromMe = async () => {
+    const next = !left.fromMe
+    await updateLeft($, l => ({ ...l, fromMe: next }))
+    // Turning the filter off outside a search leaves the channel list alone.
+    if (next || isSearch) await searchMessages($, client, left.query, next)
   }
 
   return (
@@ -42,17 +43,10 @@ export function channelColumn(
       <Text bold>Channels</Text>
       <Box key="search-frame" flexDirection="column" {...(Input ? { borderStyle: 'round', borderColor: 'promptBorder' } : {})}>
         {Input && (
-          <Input key="search" placeholder="Search messages" value={left.query} submitLabel="search" onSubmit={(value: string) => void search(value.trim())} />
+          <Input key="search" placeholder="Search messages" value={left.query} submitLabel="search" onSubmit={(value: string) => void searchMessages($, client, value.trim(), left.fromMe)} />
         )}
         <Box flexDirection="row" gap={1}>
-          <Button
-            key="from-me"
-            label="From me"
-            onPress={async () => {
-              const id = await myUserId($, client)
-              if (id !== undefined) await search(left.query, `from:<@${id}>`)
-            }}
-          />
+          <Button key="from-me" label={`${left.fromMe ? '☑' : '☐'} From me`} onPress={() => void toggleFromMe()} />
           {isSearch && (
             <Button key="clear" label="× Clear" onPress={() => void updateLeft($, l => ({ ...l, mode: 'channels' as const, top: 0 }))} />
           )}
