@@ -9,6 +9,7 @@ import {
   parseSearch,
   parseThread,
   parseUploadTicket,
+  parseUsers,
   unwrap,
 } from './parse'
 
@@ -42,6 +43,7 @@ const CHANNEL_TYPES = 'public_channel,private_channel,im,mpim'
 const CHANNEL_PAGE_SIZE = 200
 const SEARCH_PAGE_SIZE = 20
 const DETAILED = 'detailed'
+const CONCISE = 'concise'
 
 const defined = (args: Record<string, unknown>) =>
   Object.fromEntries(Object.entries(args).filter(([, value]) => value !== undefined))
@@ -118,6 +120,16 @@ export function createMcpClient(call: McpCall, readFile?: ReadFile, server = '')
         response_format: DETAILED,
       })
       return parseSearch(results, pagination_info)
+    },
+    async searchUsers(query, limit) {
+      const { results = '' } = await fields('slack_search_users', {
+        // A leading `-` would exclude the word.
+        keywords: [query.replace(/^-+/, '')],
+        natural_language_query: '',
+        limit,
+        response_format: CONCISE,
+      })
+      return parseUsers(results)
     },
     async send(channelId, text, threadTs) {
       await fields('slack_send_message', { channel_id: channelId, message: text, thread_ts: threadTs })

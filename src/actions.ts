@@ -10,6 +10,8 @@ import { domainFromPermalink, messageLink } from './slack/link'
 import { readChannels, readMyUserIds, updateChannels, updateLeft, updateMyUserIds, updatePaneOpen } from './state'
 
 export const PANE_ID = 'slack'
+// The pane's message input.
+export const COMPOSER_KEY = 'composer'
 
 export async function loadChannels($: EngineInterface, client: SlackClient, cursor?: string): Promise<void> {
   await updateChannels($, c => ({ ...c, isLoading: true }))

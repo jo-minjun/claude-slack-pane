@@ -18,6 +18,8 @@ export type SearchHit = {
   text: string
   permalink: string
 }
+// A person a message can mention: `<@id>` in the text Slack receives.
+export type SlackUser = { id: string; name: string }
 export type Page<T> = { items: T[]; nextCursor?: string }
 export type UploadTicket = { uploadUrl: string; fileId: string }
 export type View =
@@ -60,6 +62,8 @@ export type ComposerState = {
   attachment?: Attachment
   isSending: boolean
   error?: string
+  // The `@query` the draft ends in, and the people it may mean.
+  mention?: { text: string; query: string; candidates: SlackUser[]; isLoading: boolean }
 }
 export type RefreshState = {
   status: 'idle' | 'refreshing' | 'paused' | 'error'

@@ -106,5 +106,5 @@ export async function attachFromClipboard($: EngineInterface): Promise<void> {
 
 export async function removeAttachment($: EngineInterface): Promise<void> {
   await removeTemp($, (await readComposer($)).attachment)
-  await updateComposer($, c => ({ isPathMode: c.isPathMode, isSending: c.isSending, ...(c.draft === undefined ? {} : { draft: c.draft }) }))
+  await updateComposer($, ({ attachment: _, error: __, ...rest }) => rest)
 }

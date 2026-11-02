@@ -1,6 +1,6 @@
 import type { McpToolResult } from 'claude-code'
 
-import type { Channel, ChannelKind, Message, Page, SearchHit, UploadTicket } from '../../types'
+import type { Channel, ChannelKind, Message, Page, SearchHit, SlackUser, UploadTicket } from '../../types'
 import { SlackError } from './client'
 
 // The Slack MCP answers with human-readable text, not a schema. Every format
@@ -106,6 +106,16 @@ const splitMeta = (lines: string[]) => {
 
 export function parseProfile(text: string): string {
   return /^User ID:\s*(\S+)/m.exec(text)?.[1] ?? fail('profile')
+}
+
+// A concise user search lists `1. Name - U0123 - email - title`.
+const USER_LINE = /^\d+\.\s+(.+?)\s+-\s+([UW][A-Z0-9]+)(?:\s+-|\s*$)/
+
+export function parseUsers(text: string): SlackUser[] {
+  return text.split('\n').flatMap(line => {
+    const match = USER_LINE.exec(line.trim())
+    return match ? [{ id: match[2]!, name: match[1]! }] : []
+  })
 }
 
 const kindOf = (type: string): ChannelKind => {

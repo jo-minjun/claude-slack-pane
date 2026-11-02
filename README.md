@@ -26,6 +26,8 @@ slack-pane talks to Slack through the Slack MCP server connected to Claude Code.
 - **Slack formatting.** slack-pane draws `*bold*`, `_italic_`, `~strike~`, `` `code` ``, code blocks and `>` quotes as styles, without their markers. A user mention shows the user's name.
 - **Live view.** slack-pane re-reads only the open channel or thread. The default interval is 10 seconds. The column header (the top line of the right column) shows the refresh state (`↻ 10s · 14:05:12`, `↻ updating…`, `⏸ paused`, `⚠ failed …`).
 - **Send.** When the message input is empty, the message input shows where a message goes (`Message #general`, `Reply in thread · #general`). When you press Enter, slack-pane sends the message at once.
+- **Mentions.** When the message input ends in `@` and part of a name, candidate buttons appear under the message input. When you press a candidate, the `@query` in the message input becomes `<@USER_ID>`. Slack takes this form as a mention. The sent message shows as `@name` in the pane's message list.
+- **Mention candidates.** The candidate list shows the authors of the open channel or thread first and Slack user search results second. The author candidates leave you out. A Korean syllable reaches the message input only when its composing ends. Because of this, when you press Space after the last syllable, the search includes that syllable and the candidate buttons stay.
 - **Images.** `Attach file` takes a file path. When you drag a file onto the terminal, the terminal types its path. `Paste image` attaches the image on the clipboard (macOS only). When a path in the message input points to an existing image file, slack-pane removes the path from the text and attaches the file. This applies to png, jpg, gif and webp files whose path starts with `/…` or `~/…`. Because of this, an image is attached even in a terminal that pastes a clipboard image as a temporary file's path.
 
   ![An image attached under the message input](docs/images/attach.png)
@@ -80,6 +82,7 @@ claude --plugin-dir /path/to/claude-slack-pane
 - slack-pane does not show unread markers, emoji images or reactions.
 - A user mention shows the name that Slack sends with it. A user-group mention, or a user mention sent without a name, shows its ID (`@subteam^S…`, `@U…`). The Slack MCP cannot look up group names.
 - The message input and the search box cut a line longer than the field with `…`. The two inputs do not wrap long lines. The cursor can show past the field. slack-pane uses Claude Code's input element, so slack-pane cannot change this behavior.
+- slack-pane reads only an `@query` at the end of the message input. Claude Code's input does not tell the cursor position. An `@name` you type yourself goes as plain text, not as a mention. A `<@USER_ID>` you type yourself goes as a mention.
 - You cannot edit or delete messages in the pane. When you press `Slack ↗`, the message opens in Slack.
 - Caution: Check the channel name in the column header before you press Enter. slack-pane sends a message at once, with no confirmation step.
 

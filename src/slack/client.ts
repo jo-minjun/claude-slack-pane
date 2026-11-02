@@ -1,4 +1,4 @@
-import type { Channel, Message, Page, SearchHit, UploadTicket } from '../../types'
+import type { Channel, Message, Page, SearchHit, SlackUser, UploadTicket } from '../../types'
 
 export type SlackErrorKind = 'not-connected' | 'tool-error' | 'parse'
 
@@ -27,6 +27,7 @@ export interface SlackClient {
   readChannel(channelId: string, options: ReadChannelOptions): Promise<Page<Message>>
   readThread(channelId: string, threadTs: string, cursor?: string): Promise<Page<Message>>
   search(keywords: string[], filters: string, cursor?: string): Promise<Page<SearchHit>>
+  searchUsers(query: string, limit: number): Promise<SlackUser[]>
   send(channelId: string, text: string, threadTs?: string): Promise<void>
   createUpload(filename: string, size: number): Promise<UploadTicket>
   completeUpload(fileId: string, channelId: string, comment: string, threadTs?: string): Promise<void>
