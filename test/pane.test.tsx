@@ -189,6 +189,22 @@ test('a selected message keeps its whole name: links go to the action bar where 
   await narrow.unmount()
 })
 
+test('a message is drawn without Slack markers, its marked words styled', async ($, on) => {
+  const MARKED = `Channel: #general (C0FAKE0001)
+
+=== Message from Alice Kim (U0FAKE0001) at 2026-10-30 11:02:26 KST === 
+Message TS: 1793300000.000100
+*Deploy* done: \`v1.2\` _today_`
+  engine(on, (tool, args) => (tool === 'slack_read_channel' ? ok({ messages: MARKED, pagination_info: '' }) : slack(tool, args)))
+  await start($)
+  await run($, 'slack-pane', '#general')
+  const ui = await $.ui.mount({ ...pane(), surface: 'terminal' })
+  const row = (await ui.find({ key: 'msg:1793300000.000100' }))!.text!.split('\n')[1]!
+  expect(row.trimEnd()).toBe('Deploy done: v1.2 today')
+  expect((await ui.findAll({ type: 'Text' })).some(t => t.text === '\nDeploy' && t.props.bold === true)).toBe(true)
+  await ui.unmount()
+})
+
 test('left column width', async ($, on) => {
   engine(on, slack)
   await start($)

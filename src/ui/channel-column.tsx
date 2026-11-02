@@ -3,6 +3,7 @@ import type { ElementTable, EngineInterface } from 'claude-code'
 import type { Channel, ChannelsState, LeftState, SearchHit, View } from '../../types'
 import { searchMessages } from '../commands'
 import { channelLabel, displayWidth, firstLine, fitWidth, formatTime, padWidth } from '../format'
+import { plainText } from '../mrkdwn'
 import { openView } from '../poller'
 import { channelRows, leftItemRows, leftList, leftPageSize, scrollLeft } from '../scroll'
 import type { SlackClient } from '../slack/client'
@@ -105,7 +106,7 @@ function searchHit(
   const time = formatTime(hit.ts, clock.now, clock.tz)
   const channel = fitWidth(label, Math.max(1, cells - displayWidth(time) - 1))
   const author = `${fitWidth(hit.userName, Math.max(1, Math.floor(cells / 2)))}: `
-  const text = firstLine(hit.text, Math.max(1, cells - displayWidth(author)))
+  const text = firstLine(plainText(hit.text), Math.max(1, cells - displayWidth(author)))
   const key = `${hit.channelId}:${hit.ts}`
   return [
     <Box key={`hit-row:${key}`} flexDirection="column" width={cells} hover={MESSAGE_HOVER}>

@@ -3,7 +3,8 @@ import type { EngineInterface, UiScrollInput } from 'claude-code'
 import type { Channel, ChannelsState, LeftState, Message, MessageAnchor, View } from '../types'
 import { loadChannels, runSearch } from './actions'
 import { splitQuery } from './commands'
-import { isDirect, plainEmoji, wrapText } from './format'
+import { isDirect, plainEmoji } from './format'
+import { type StyledRow, styledRows } from './mrkdwn'
 import { loadOlder } from './poller'
 import type { SlackClient } from './slack/client'
 import { actionBarRows } from './ui/action-bar'
@@ -79,7 +80,7 @@ const FILE_ROW = '[file]'
 // The right column's messages laid out in rows: each a header row, its body rows, and the
 // selected one's action bar; `top` is the first row the window of `rows` shows.
 export type MessageFrame = {
-  body: string[][]
+  body: StyledRow[][]
   bar: number[]
   pos: number[]
   total: number
@@ -106,7 +107,7 @@ export function messageFrame(
   clock: Clock,
 ): MessageFrame {
   const textWidth = Math.max(1, width - EDGE_CELLS)
-  const body = items.map(m => [...wrapText(m.text === '' ? ' ' : plainEmoji(m.text), textWidth), ...(m.hasFile ? [FILE_ROW] : [])])
+  const body = items.map(m => [...styledRows(m.text === '' ? ' ' : plainEmoji(m.text), textWidth), ...(m.hasFile ? [[{ text: FILE_ROW }]] : [])])
   const bar = items.map(m => (m.ts === selectedTs ? actionBarRows(view, width, !linksFitHeader(m, clock, textWidth)) : 0))
   const pos: number[] = []
   let total = 0

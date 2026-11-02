@@ -3,6 +3,7 @@ import type { ElementTable, EngineInterface } from 'claude-code'
 import type { Loadable, Message, RefreshState, View } from '../../types'
 import { clockTime, displayWidth, firstLine, fitWidth, padWidth } from '../format'
 import { loadOlder, openView } from '../poller'
+import type { StyledRow } from '../mrkdwn'
 import { lastTop, type MessageFrame, messageHeight, newerBelow, scrollMessages, selectMessage } from '../scroll'
 import type { SlackClient } from '../slack/client'
 import { updateMessageTop } from '../state'
@@ -54,6 +55,31 @@ export function headerRow(
       <Text dimColor>{status}</Text>
     </Box>
   )
+}
+
+// Inline code in the color the prompt draws a permission in: apart from the text, and in every theme.
+const CODE_COLOR = 'permission'
+
+// Each row a run of Texts styled as its pieces are, padded to the width: a Button takes a press only where it draws.
+function bodyTexts(Text: ElementTable['Text'], rows: StyledRow[], hasHeader: boolean, width: number) {
+  return rows.flatMap((row, r) => {
+    const used = row.reduce((sum, piece) => sum + displayWidth(piece.text), 0)
+    const pieces = [...row, { text: ' '.repeat(Math.max(0, width - used)) }].filter(piece => piece.text !== '')
+    const breaksBefore = hasHeader || r > 0
+    return pieces.map((piece, k) => (
+      <Text
+        key={`text:${r}:${k}`}
+        hover={MESSAGE_HOVER}
+        {...('bold' in piece ? { bold: true } : {})}
+        {...('italic' in piece ? { italic: true } : {})}
+        {...('strike' in piece ? { strikethrough: true } : {})}
+        {...('dim' in piece ? { dimColor: true } : {})}
+        {...('code' in piece ? { color: CODE_COLOR } : {})}
+      >
+        {`${k === 0 && breaksBefore ? '\n' : ''}${piece.text}`}
+      </Text>
+    ))
+  })
 }
 
 const blankRows = (count: number) => Array.from({ length: count }, () => ' ').join('\n')
@@ -108,7 +134,7 @@ export function messageList(
         <Box key={`row:${m.ts}`} flexDirection="column" hover={MESSAGE_HOVER}>
           <Button key={`msg:${m.ts}`} plain onPress={() => void selectMessage($, m.ts)}>
             {hasHeader && header}
-            {body.length > 0 && <Text hover={MESSAGE_HOVER}>{`${hasHeader ? '\n' : ''}${body.map(row => padWidth(row, frame.width)).join('\n')}`}</Text>}
+            {bodyTexts(Text, body, hasHeader, frame.width)}
           </Button>
           {/* Laid over the header rather than beside it: a Button cannot hold another, and a header
               apart from the message's Button would leave the body's first row to invert under the pointer. */}
