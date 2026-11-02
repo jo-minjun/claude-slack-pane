@@ -9,6 +9,9 @@ import { actionBar } from './action-bar'
 
 export type Clock = { now: number; tz: number }
 
+// The engine inverts only a Button's first line under the pointer: light the whole message instead.
+const MESSAGE_HOVER = { backgroundColor: 'subtle' } as const
+
 export function refreshText(refresh: RefreshState, interval: number, clock: Clock): string {
   if (refresh.status === 'refreshing') return '↻ updating…'
   if (refresh.status === 'paused') return '⏸ paused'
@@ -82,13 +85,15 @@ export function messageList(
       {!messages.isLoading && messages.items.length === 0 && messages.error === undefined && <Text dimColor>No messages</Text>}
       <Box flexDirection="column" gap={MESSAGE_GAP_ROWS}>
         {shown.map(m => (
-          <Box key={`row:${m.ts}`} flexDirection="column">
+          <Box key={`row:${m.ts}`} flexDirection="column" hover={MESSAGE_HOVER}>
             <Button key={`msg:${m.ts}`} plain onPress={() => void selectMessage($, m.ts)}>
-              <Text bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'}>
+              <Text bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'} hover={MESSAGE_HOVER}>
                 {`${m.ts === selectedTs ? '> ' : ''}${m.userName}`}
               </Text>
-              <Text dimColor>{messageMeta(m, clock)}</Text>
-              <Text>{`\n${m.text === '' ? ' ' : m.text}${m.hasFile ? '\n[file]' : ''}`}</Text>
+              <Text dimColor hover={MESSAGE_HOVER}>
+                {messageMeta(m, clock)}
+              </Text>
+              <Text hover={MESSAGE_HOVER}>{`\n${m.text === '' ? ' ' : m.text}${m.hasFile ? '\n[file]' : ''}`}</Text>
             </Button>
             {m.ts === selectedTs && actionBar($, client, els, view, m)}
           </Box>
