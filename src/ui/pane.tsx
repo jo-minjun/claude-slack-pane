@@ -47,9 +47,9 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
   // Each column is clipped to the body so the pane itself never scrolls: one window would move both.
   const columnRows = Math.max(1, rows - (banner === null ? 0 : 1))
   const messageRows = Math.max(3, columnRows - RIGHT_RESERVED_ROWS)
-  setLayout({ leftWidth, leftRows: columnRows, rightWidth, messageRows })
   const clock = { now: await $.clock.now(), tz: tzOffsetMinutes() }
-  const frame = view === null ? null : messageFrame(messages.items, view, selectedTs, messageTop, messageRows, rightWidth)
+  setLayout({ leftWidth, leftRows: columnRows, rightWidth, messageRows, clock })
+  const frame = view === null ? null : messageFrame(messages.items, view, selectedTs, messageTop, messageRows, rightWidth, clock)
 
   return (
     <Box flexDirection="column">

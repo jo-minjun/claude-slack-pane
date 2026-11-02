@@ -22,8 +22,9 @@ function labels(view: View): string[] {
   return [LABEL.quote, ...(view.kind === 'channel' ? [LABEL.openThread] : [])]
 }
 
-export function actionBarRows(view: View, width: number): number {
-  return packedRows(labels(view).map(label => displayWidth(label) + BUTTON_CHROME), Math.max(1, width))
+export function actionBarRows(view: View, width: number, withLinks: boolean): number {
+  const buttons = labels(view).map(label => displayWidth(label) + BUTTON_CHROME)
+  return packedRows([...buttons, ...(withLinks ? [HEADER_LINKS_WIDTH] : [])], Math.max(1, width))
 }
 
 export function actionBar(
@@ -32,6 +33,7 @@ export function actionBar(
   els: ElementTable,
   view: View,
   selected: Message,
+  withLinks: boolean,
 ) {
   const { Box, Button } = els
   return (
@@ -51,6 +53,11 @@ export function actionBar(
             })
           }
         />
+      )}
+      {withLinks && (
+        <Box key="bar-links" flexGrow={1} flexDirection="row" justifyContent="flex-end">
+          {headerLinks($, client, els, view, selected)}
+        </Box>
       )}
     </Box>
   )

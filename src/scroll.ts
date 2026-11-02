@@ -7,6 +7,7 @@ import { isDirect, plainEmoji, wrapText } from './format'
 import { loadOlder } from './poller'
 import type { SlackClient } from './slack/client'
 import { actionBarRows } from './ui/action-bar'
+import { type Clock, linksFitHeader } from './ui/message-header'
 import { searchButtonRows } from './ui/search-frame'
 import {
   readChannels,
@@ -27,7 +28,7 @@ const LEFT_FIXED_ROWS = 6
 const SEARCH_HIT_ROWS = 3
 
 // What the last drawing laid out; a wheel tick is read against it.
-type PaneLayout = { leftWidth: number; leftRows: number; rightWidth: number; messageRows: number }
+type PaneLayout = { leftWidth: number; leftRows: number; rightWidth: number; messageRows: number; clock: Clock }
 let layout: PaneLayout | undefined
 export function setLayout(next: PaneLayout): void {
   layout = next
@@ -102,11 +103,11 @@ export function messageFrame(
   anchor: MessageAnchor | null,
   rows: number,
   width: number,
+  clock: Clock,
 ): MessageFrame {
   const textWidth = Math.max(1, width - EDGE_CELLS)
-  const barRows = actionBarRows(view, width)
   const body = items.map(m => [...wrapText(m.text === '' ? ' ' : plainEmoji(m.text), textWidth), ...(m.hasFile ? [FILE_ROW] : [])])
-  const bar = items.map(m => (m.ts === selectedTs ? barRows : 0))
+  const bar = items.map(m => (m.ts === selectedTs ? actionBarRows(view, width, !linksFitHeader(m, clock, textWidth)) : 0))
   const pos: number[] = []
   let total = 0
   items.forEach((_, i) => {
@@ -147,14 +148,14 @@ export async function scrollMessages($: EngineInterface, client: SlackClient, by
   const { messageRows: rows, rightWidth: width } = layout
   const [view, before, anchor, selectedTs] = await Promise.all([readView($), readMessages($), readMessageTop($), readSelectedTs($)])
   if (!view) return
-  let frame = messageFrame(before.items, view, selectedTs, anchor, rows, width)
+  let frame = messageFrame(before.items, view, selectedTs, anchor, rows, width, layout.clock)
   const isAtOldest = by < 0 && frame.top === 0 && view.kind === 'channel'
   const isAtNewest = by > 0 && frame.top >= lastTop(frame) && view.kind === 'thread' && before.cursor !== undefined
   let items = before.items
   if (items.length > 0 && (isAtOldest || isAtNewest)) {
     await loadOlder($, client)
     items = (await readMessages($)).items
-    frame = messageFrame(items, view, selectedTs, anchor, rows, width)
+    frame = messageFrame(items, view, selectedTs, anchor, rows, width, layout.clock)
   }
   await moveTo($, items, frame, anchor, Math.min(lastTop(frame), Math.max(0, frame.top + by)))
 }
@@ -196,7 +197,7 @@ export async function selectMessage($: EngineInterface, ts: string): Promise<voi
   const { items } = messages
   const index = items.findIndex(m => m.ts === ts)
   if (index === -1) return
-  const frame = messageFrame(items, view, ts, anchor, layout.messageRows, layout.rightWidth)
+  const frame = messageFrame(items, view, ts, anchor, layout.messageRows, layout.rightWidth, layout.clock)
   const start = frame.pos[index]!
   const end = start + messageHeight(frame, index)
   if (start < frame.top) await moveTo($, items, frame, anchor, start)

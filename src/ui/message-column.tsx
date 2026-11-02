@@ -1,14 +1,14 @@
 import type { ElementTable, EngineInterface } from 'claude-code'
 
 import type { Loadable, Message, RefreshState, View } from '../../types'
-import { clockTime, displayWidth, firstLine, fitWidth, formatTime, padWidth, plainEmoji } from '../format'
+import { clockTime, displayWidth, firstLine, fitWidth, padWidth } from '../format'
 import { loadOlder, openView } from '../poller'
 import { lastTop, type MessageFrame, messageHeight, newerBelow, scrollMessages, selectMessage } from '../scroll'
 import type { SlackClient } from '../slack/client'
 import { updateMessageTop } from '../state'
 import { actionBar, HEADER_LINKS_WIDTH, headerLinks } from './action-bar'
+import { type Clock, headerName, linksFitHeader, messageMeta } from './message-header'
 
-export type Clock = { now: number; tz: number }
 
 // The engine inverts only a Button's first line under the pointer: light the whole message instead.
 export const MESSAGE_HOVER = { backgroundColor: 'subtle' } as const
@@ -20,11 +20,6 @@ export function refreshText(refresh: RefreshState, interval: number, clock: Cloc
   return refresh.lastSuccessAt === undefined
     ? `↻ ${interval}s`
     : `↻ ${interval}s · ${clockTime(refresh.lastSuccessAt, clock.tz)}`
-}
-
-function messageMeta(m: Message, clock: Clock): string {
-  const replies = m.replyCount > 0 ? `  ${m.replyCount} replies` : ''
-  return `  ${formatTime(m.ts, clock.now, clock.tz)}${replies}`
 }
 
 export function headerRow(
@@ -97,8 +92,9 @@ export function messageList(
     if (hasHeader || body.length > 0) {
       const isSelected = m.ts === selectedTs
       const meta = messageMeta(m, clock)
-      const nameWidth = frame.width - displayWidth(meta) - (isSelected ? 1 + HEADER_LINKS_WIDTH : 0)
-      const name = fitWidth(`${isSelected ? '> ' : ''}${plainEmoji(m.userName)}`, Math.max(1, nameWidth))
+      const hasHeaderLinks = isSelected && linksFitHeader(m, clock, frame.width)
+      const nameWidth = frame.width - displayWidth(meta) - (hasHeaderLinks ? 1 + HEADER_LINKS_WIDTH : 0)
+      const name = fitWidth(headerName(m, isSelected), Math.max(1, nameWidth))
       const header = [
         <Text key="name" bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'} hover={MESSAGE_HOVER}>
           {name}
@@ -116,12 +112,12 @@ export function messageList(
           </Button>
           {/* Laid over the header rather than beside it: a Button cannot hold another, and a header
               apart from the message's Button would leave the body's first row to invert under the pointer. */}
-          {hasHeader && isSelected && (
+          {hasHeader && hasHeaderLinks && (
             <Box position="absolute" top={0} left={frame.width - HEADER_LINKS_WIDTH}>
               {headerLinks($, client, els, view, m)}
             </Box>
           )}
-          {isBarWhole && actionBar($, client, els, view, m)}
+          {isBarWhole && actionBar($, client, els, view, m, isSelected && !hasHeaderLinks)}
         </Box>,
       )
     }
