@@ -147,6 +147,7 @@ test('decodeSlackText restores entities and links', () => {
   )
   expect(decodeSlackText('see <https://x.io> &lt;tag&gt;')).toBe('see https://x.io <tag>')
   expect(decodeSlackText('<https://x.io|https://x.io>')).toBe('https://x.io')
+  expect(decodeSlackText('<!subteam^S04PZ3PGQUD> <@U068EFBD6TU|심소현> <@U0NOLABEL>')).toBe('@subteam^S04PZ3PGQUD @심소현 @U0NOLABEL')
 })
 
 test('unrecognized text throws parse error', () => {

@@ -38,7 +38,7 @@ export function decodeSlackText(text: string): string {
   const linked = text.replace(/<([^<>|]+)(?:\|([^<>]*))?>/g, (_, target: string, label?: string) => {
     const url = decodeEntities(target)
     const shown = label === undefined ? undefined : decodeEntities(label)
-    if (url.startsWith('@')) return url
+    if (url.startsWith('@')) return shown === undefined ? url : `@${shown.replace(/^@/, '')}`
     if (url.startsWith('#')) return `#${shown ?? url.slice(1)}`
     if (url.startsWith('!')) return `@${shown ?? url.slice(1)}`
     if (shown === undefined || shown === url) return url
