@@ -290,18 +290,18 @@ sequenceDiagram
 `Quote message`와 `Quote thread`는 `$.prompt.fill({ text, mode: "insert" })`로 입력창 커서 위치에 표시를 넣는다.
 
 ```
-[slack:message #general 10/30 14:14 @alice](C0123ABCD/1793337289.953239)
-[slack:thread #backend 11/02 14:05 @홍길동](C0ABC123/1793400000.000100)
-[slack:message #backend 11/02 14:07 @김철수](C0ABC123/1793400000.000100/1793400120.000200)
+[slack:message:C0123ABCD/1793337289.953239 in:#general from:@alice at:10/30 14:14]
+[slack:thread:C0ABC123/1793400000.000100 in:#backend from:@홍길동 at:11/02 14:05]
+[slack:message:C0ABC123/1793400000.000100/1793400120.000200 in:#backend from:@김철수 at:11/02 14:07]
 ```
 
-- 대괄호 안은 사람이 읽는 부분이다: 종류, 채널, 시각, 작성자.
-- 괄호 안은 `채널ID/ts` 또는 답글이면 `채널ID/부모ts/ts`다.
+- `slack:종류:` 뒤는 `채널ID/ts`, 답글이면 `채널ID/부모ts/ts`다.
+- 그 뒤는 사람이 읽는 부분이다: `in:`채널, `from:`작성자, `at:`시각. Slack 검색 문법과 같은 모양이다.
 - 표시 자체에 ID가 있으므로 mod 상태에 인용 목록을 따로 저장하지 않는다. 표시를 지우면 인용도 빠진다.
 
 ### 보낼 때 처리 (`prompt.submit` hook)
 
-1. 프롬프트 텍스트에서 `\[slack:(message|thread) [^\]]*\]\(([CDG][A-Z0-9]+)((?:\/\d+\.\d+){1,2})\)`로 표시를 모두 찾는다.
+1. 프롬프트 텍스트에서 `\[slack:(message|thread):([CDG][A-Z0-9]+)((?:\/\d+\.\d+){1,2})(?: [^\]]*)?\]`로 표시를 모두 찾는다.
 2. 같은 표시는 한 번만 처리한다.
 3. 표시마다 `readThread`로 원문을 다시 조회한다. `message`면 해당 `ts`의 메시지 하나를, `thread`면 스레드 전체를 쓴다.
 4. 원문을 아래 형식으로 `next({ ...e, context: [...(e.context ?? []), 원문] })`에 붙인다. 프롬프트 텍스트는 바꾸지 않는다.

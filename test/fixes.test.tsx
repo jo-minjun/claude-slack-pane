@@ -76,7 +76,7 @@ test('whole-thread quote does not repeat the parent across pages', async () => {
     c2: { items: [parent, reply('1.2')] },
   }
   const client = { readThread: async (_c: string, _t: string, cursor?: string) => pages[cursor ?? 'first']! } as unknown as SlackClient
-  const { context } = await attachQuotes('[slack:thread #g 1 @a](C1/1.0)', client, () => '#g', line => line.text)
+  const { context } = await attachQuotes('[slack:thread:C1/1.0 in:#g from:@a at:1]', client, () => '#g', line => line.text)
   expect(context[0]?.split('\n').slice(2, -1)).toEqual(['parent', '1.1', '1.2'])
 })
 

@@ -4,7 +4,8 @@ import type { SlackClient } from './slack/client'
 export type QuoteKind = 'message' | 'thread'
 export type QuoteRef = { kind: QuoteKind; channelId: string; threadTs?: string; ts: string }
 
-const TOKEN = /\[slack:(message|thread) [^\]]*\]\(([CDG][A-Z0-9]+)((?:\/\d+\.\d+){1,2})\)/g
+// The ID path leads, so the words after it, read by people, may hold anything but brackets.
+const TOKEN = /\[slack:(message|thread):([CDG][A-Z0-9]+)((?:\/\d+\.\d+){1,2})(?: [^\]]*)?\]/g
 const MAX_MESSAGES = 200
 const MAX_CHARS = 40_000
 const CLOSE = '</slack-quote>'
@@ -16,7 +17,7 @@ const attribute = (text: string) =>
 
 export function quoteToken(ref: QuoteRef, label: string, time: string, author: string): string {
   const path = [ref.channelId, ref.threadTs, ref.ts].filter(part => part !== undefined).join('/')
-  return `[slack:${ref.kind} ${safe(label)} ${time} @${safe(author)}](${path})`
+  return `[slack:${ref.kind}:${path} in:${safe(label)} from:@${safe(author)} at:${time}]`
 }
 
 export function extractQuotes(prompt: string): QuoteRef[] {
