@@ -54,8 +54,9 @@ export function actionBar(
           }
         />
       )}
+      {/* After the buttons, wrapping to the start of a row as they do: right-aligned, a wrapped row stood apart. */}
       {withLinks && (
-        <Box key="bar-links" flexGrow={1} flexDirection="row" justifyContent="flex-end">
+        <Box key="bar-links" flexDirection="row">
           {headerLinks($, client, els, view, selected)}
         </Box>
       )}
