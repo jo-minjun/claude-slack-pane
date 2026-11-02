@@ -109,7 +109,7 @@ test('hit opens thread view and back goes to message position', async ($, on) =>
   const around = sent.filter(s => s.tool === 'slack_read_channel').map(s => s.args)
   expect(around[0]).toEqual({ channel_id: 'C0FAKE0002', latest: '1793089818.196010', limit: 26, response_format: 'detailed' })
   expect(around[1]).toEqual({ channel_id: 'C0FAKE0002', oldest: '1793089818.196009', limit: 25, response_format: 'detailed' })
-  expect((await ui.find({ key: 'latest' }))?.text).toBe('Jump to latest')
+  expect((await ui.find({ key: 'latest' }))?.text).toMatch(/^▼ Latest/)
   expect(await ui.find({ type: 'Text', text: /⏸ paused/ })).toBeDefined()
   await ui.press({ key: 'latest' })
   expect(await ui.find({ key: 'latest' })).toBeUndefined()

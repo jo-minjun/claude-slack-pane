@@ -72,6 +72,11 @@ function windowEnd(items: Message[], bottomTs: string | null): number {
   return anchored === -1 ? items.length : anchored + 1
 }
 
+// Loaded messages below the window's bottom.
+export function newerHidden(items: Message[], bottomTs: string | null): number {
+  return items.length - windowEnd(items, bottomTs)
+}
+
 // The messages that fit `rows` ending at `bottomTs` (the newest when null), as [start, end).
 export function messageWindow(items: Message[], bottomTs: string | null, rows: number, heights: number[]) {
   const end = windowEnd(items, bottomTs)

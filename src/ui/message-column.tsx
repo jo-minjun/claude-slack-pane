@@ -3,8 +3,9 @@ import type { ElementTable, EngineInterface } from 'claude-code'
 import type { Loadable, Message, RefreshState, View } from '../../types'
 import { clockTime, formatTime } from '../format'
 import { loadOlder, openView } from '../poller'
-import { MESSAGE_GAP_ROWS, messageHeights, messageWindow, scrollMessages, selectMessage } from '../scroll'
+import { MESSAGE_GAP_ROWS, messageHeights, messageWindow, newerHidden, scrollMessages, selectMessage } from '../scroll'
 import type { SlackClient } from '../slack/client'
+import { updateMessageBottomTs } from '../state'
 import { actionBar } from './action-bar'
 
 export type Clock = { now: number; tz: number }
@@ -103,13 +104,26 @@ export function messageList(
           </Box>
         ))}
       </Box>
-      {view.kind === 'channel' && view.anchorTs !== undefined && (
-        <Button
-          key="latest"
-          label="Jump to latest"
-          onPress={() => void openView($, client, { kind: 'channel', channelId: view.channelId, label: view.label })}
-        />
-      )}
     </Box>
   )
+}
+
+// The row above the composer: blank while the newest messages show, else a way back to them.
+export function latestRow(
+  $: EngineInterface,
+  client: SlackClient,
+  els: ElementTable,
+  view: View,
+  messages: Loadable<Message>,
+  bottomTs: string | null,
+) {
+  const { Text, Button } = els
+  const isAnchored = view.kind === 'channel' && view.anchorTs !== undefined
+  const hidden = newerHidden(messages.items, bottomTs)
+  if (!isAnchored && hidden === 0) return <Text> </Text>
+  const press = () =>
+    isAnchored
+      ? openView($, client, { kind: 'channel', channelId: view.channelId, label: view.label })
+      : updateMessageBottomTs($, () => null)
+  return <Button key="latest" label={hidden > 0 ? `▼ Latest · ${hidden} newer` : '▼ Latest'} onPress={() => void press()} />
 }

@@ -17,11 +17,11 @@ import {
 } from '../state'
 import { channelColumn } from './channel-column'
 import { composerBox } from './composer'
-import { headerRow, messageList, refreshText } from './message-column'
+import { headerRow, latestRow, messageList, refreshText } from './message-column'
 
 const MIN_LEFT = 22
 const LEFT_SHARE = 0.3
-// Header and its rule, ▲ Older and the blank under it, the blank above the composer, and the composer with its frame.
+// Header and its rule, ▲ Older and the blank under it, the row above the composer (▼ Latest or blank), and the composer with its frame.
 const RIGHT_RESERVED_ROWS = 12
 const RULE = '─'
 
@@ -67,7 +67,8 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
               <Box key="messages" flexDirection="column" flexGrow={1} flexShrink={1} justifyContent="flex-end" overflow="hidden">
                 {messageList($, client, els, view, messages, selectedTs, bottomTs, rightWidth, messageRows, clock)}
               </Box>
-              <Box flexDirection="column" flexShrink={0} marginTop={1}>
+              <Box flexDirection="column" flexShrink={0}>
+                {latestRow($, client, els, view, messages, bottomTs)}
                 {composerBox($, client, els, view, composer)}
               </Box>
             </>

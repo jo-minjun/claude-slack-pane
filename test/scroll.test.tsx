@@ -158,3 +158,15 @@ test('selecting the top message keeps it and its action bar in view', async ($, 
   expect(await ui.find({ key: 'quote-message' })).toBeDefined()
   await ui.unmount()
 })
+
+test('latest shows how many newer messages are below and goes back to them', async ($, on) => {
+  engine(on, slack({ newest: 40 }))
+  const ui = await openFirstChannel($)
+  expect(await ui.find({ key: 'latest' })).toBeUndefined()
+  await wheel($, -6, RIGHT_COLUMN)
+  expect((await ui.find({ key: 'latest' }))?.text).toBe('▼ Latest · 2 newer')
+  await ui.press({ key: 'latest' })
+  expect(await ui.find({ key: `msg:${tsOf(39)}` })).toBeDefined()
+  expect(await ui.find({ key: 'latest' })).toBeUndefined()
+  await ui.unmount()
+})
