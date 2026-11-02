@@ -1,13 +1,14 @@
 import type { ElementTable, EngineInterface } from 'claude-code'
 
-import type { ChannelsState, LeftState, SearchHit, View } from '../../types'
+import type { Channel, ChannelsState, LeftState, SearchHit, View } from '../../types'
 import { searchMessages } from '../commands'
 import { channelLabel, displayWidth, firstLine, fitWidth, formatTime, padWidth } from '../format'
 import { openView } from '../poller'
 import { channelRows, leftItemRows, leftList, leftPageSize, scrollLeft } from '../scroll'
 import type { SlackClient } from '../slack/client'
 import { updateLeft } from '../state'
-import { type Clock, MESSAGE_HOVER } from './message-column'
+import { MESSAGE_HOVER } from './message-column'
+import type { Clock } from './message-header'
 import { CLEAR_LABEL, fromMeLabel } from './search-frame'
 
 // A button draws `[ ` and ` ]` around its label; the column keeps one cell of padding.
@@ -15,7 +16,10 @@ const BUTTON_CHROME = 5
 // The column's padding, and a cell for a symbol the width table misses, so a hit's row never wraps.
 const HIT_EDGE_CELLS = 2
 
-export function hitLabel(hit: SearchHit): string {
+// Search names a DM's channel `DM`: the channel list knows whom it is with.
+export function hitLabel(hit: SearchHit, known: Channel[]): string {
+  const channel = known.find(c => c.id === hit.channelId)
+  if (channel) return channelLabel(channel)
   return hit.channelId.startsWith('D') ? `@${hit.channelName}` : `#${hit.channelName}`
 }
 
@@ -62,7 +66,7 @@ export function channelColumn(
       {list.error !== undefined && <Text color="red">{firstLine(`⚠ ${list.error}`, width - HIT_EDGE_CELLS)}</Text>}
       {isSearch && !list.isLoading && list.items.length === 0 && list.error === undefined && <Text dimColor>No results</Text>}
       {isSearch
-        ? left.results.items.slice(top, top + pageSize).flatMap(hit => searchHit($, client, els, hit, width - HIT_EDGE_CELLS, clock))
+        ? left.results.items.slice(top, top + pageSize).flatMap(hit => searchHit($, client, els, hit, hitLabel(hit, channels.items), width - HIT_EDGE_CELLS, clock))
         : channelRows(channels.items)
             .slice(top, top + pageSize)
             .map((row, i) =>
@@ -88,10 +92,18 @@ export function channelColumn(
 
 // A hit drawn as a message is: channel and time, then author and text, padded so the whole row takes a press.
 // The blank row after it stands outside the lit Box, so what lights under the pointer is what a press opens.
-function searchHit($: EngineInterface, client: SlackClient, els: ElementTable, hit: SearchHit, cells: number, clock: Clock) {
+function searchHit(
+  $: EngineInterface,
+  client: SlackClient,
+  els: ElementTable,
+  hit: SearchHit,
+  label: string,
+  cells: number,
+  clock: Clock,
+) {
   const { Box, Text, Button } = els
   const time = formatTime(hit.ts, clock.now, clock.tz)
-  const channel = fitWidth(hitLabel(hit), Math.max(1, cells - displayWidth(time) - 1))
+  const channel = fitWidth(label, Math.max(1, cells - displayWidth(time) - 1))
   const author = `${fitWidth(hit.userName, Math.max(1, Math.floor(cells / 2)))}: `
   const text = firstLine(hit.text, Math.max(1, cells - displayWidth(author)))
   const key = `${hit.channelId}:${hit.ts}`
@@ -104,7 +116,7 @@ function searchHit($: EngineInterface, client: SlackClient, els: ElementTable, h
           void openView($, client, {
             kind: 'thread',
             channelId: hit.channelId,
-            label: hitLabel(hit),
+            label,
             threadTs: hit.threadTs ?? hit.ts,
             back: { anchorTs: hit.threadTs ?? hit.ts },
           }, hit.ts)

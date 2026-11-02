@@ -147,6 +147,48 @@ test('the open channel is drawn in the accent color', async ($, on) => {
   await ui.unmount()
 })
 
+test('search names a DM by whom it is with, as the channel list does', async ($, on) => {
+  const DM_HIT = `# Search Results for: dm
+
+## Messages (1 results)
+### Result 1 of 1
+Channel: DM (ID: D0FAKE0001)
+Participants: Alice Kim (ID: U0FAKE0001), Bob (ID: U0FAKE0002)
+From: Bob <bob@example.com> (ID: U0FAKE0002) 
+Time: 2026-10-30 14:49:51 KST
+Message_ts: 1793339391.207789
+Permalink: [link](https://acme.slack.com/archives/D0FAKE0001/p1793339391207789)
+Text: 
+Can you review this?
+
+---
+`
+  engine(on, (tool, args) => (tool === 'slack_search_public_and_private' ? ok({ results: DM_HIT, pagination_info: '' }) : slack(tool, args)))
+  await start($)
+  await run($, 'slack-pane')
+  const ui = await $.ui.mount({ ...pane(), surface: 'terminal' })
+  await ui.input({ key: 'search', text: 'review' })
+  expect((await ui.find({ key: 'hit:D0FAKE0001:1793339391.207789' }))?.text).toMatch(/^@Bob /)
+  await ui.unmount()
+})
+
+test('a selected message keeps its whole name: links go to the action bar where the header is too narrow', async ($, on) => {
+  engine(on, slack)
+  await start($)
+  await run($, 'slack-pane', '#general')
+  const BOT_TS = '1793337289.953239'
+  const wide = await $.ui.mount({ ...pane(120), surface: 'terminal' })
+  await wide.press({ key: `msg:${BOT_TS}` })
+  expect(await wide.find({ key: 'copy-link' })).toBeDefined()
+  expect(await wide.find({ key: 'bar-links' })).toBeUndefined()
+  await wide.unmount()
+  const narrow = await $.ui.mount({ ...pane(60), surface: 'terminal' })
+  expect((await narrow.find({ key: `msg:${BOT_TS}` }))?.text).toMatch(/^> Bot One /)
+  expect(await narrow.find({ key: 'bar-links' })).toBeDefined()
+  expect(await narrow.find({ key: 'copy-link' })).toBeDefined()
+  await narrow.unmount()
+})
+
 test('left column width', async ($, on) => {
   engine(on, slack)
   await start($)
