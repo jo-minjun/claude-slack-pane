@@ -58,14 +58,18 @@ export function actionBar(
   )
 }
 
-// The link controls at the right end of the selected message's header.
+// The link controls at the right end of the selected message's header, bold as the action bar's labels.
 export function headerLinks($: EngineInterface, client: SlackClient, els: ElementTable, view: View, selected: Message) {
   const { Box, Text, Button } = els
   return (
     <Box flexDirection="row" flexShrink={0}>
-      <Button key="copy-link" plain dimColor label={LABEL.copyLink} onPress={press => void copyLink($, client, view, selected, press.surface)} />
+      <Button key="copy-link" plain onPress={press => void copyLink($, client, view, selected, press.surface)}>
+        <Text bold>{LABEL.copyLink}</Text>
+      </Button>
       <Text dimColor>{LINK_SEPARATOR}</Text>
-      <Button key="open-in-slack" plain dimColor label={LABEL.openInSlack} onPress={() => void openInSlack($, client, view, selected)} />
+      <Button key="open-in-slack" plain onPress={() => void openInSlack($, client, view, selected)}>
+        <Text bold>{LABEL.openInSlack}</Text>
+      </Button>
     </Box>
   )
 }
