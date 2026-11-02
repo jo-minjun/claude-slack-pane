@@ -174,7 +174,7 @@ test('banner shows not connected', async ($, on) => {
   await ui.unmount()
 })
 
-test('channels and direct messages are listed in their own sections', async ($, on) => {
+test('channels and direct messages are listed in their own sections, each by name', async ($, on) => {
   const MIXED = `## My Channels (showing 4)
 
 ### DM with Bob
@@ -205,7 +205,7 @@ test('channels and direct messages are listed in their own sections', async ($, 
   const rows = (await ui.findAll({}))
     .map(e => (e.type === 'Text' && [...HEADINGS, ' '].includes(e.text) ? e.text : e.key))
     .filter(k => k !== undefined && ([...HEADINGS, ' '].includes(k) || k.startsWith('ch:')))
-  expect(rows).toEqual(['CHANNELS', 'ch:C0FAKE0001', 'ch:C0FAKE0002', ' ', 'DIRECT MESSAGES', 'ch:D0FAKE0001', 'ch:G0FAKE0001'])
+  expect(rows).toEqual(['CHANNELS', 'ch:C0FAKE0002', 'ch:C0FAKE0001', ' ', 'DIRECT MESSAGES', 'ch:D0FAKE0001', 'ch:G0FAKE0001'])
   expect((await ui.find({ key: 'ch:G0FAKE0001' }))?.text).toBe('@Bob, Carol')
   await ui.unmount()
 })

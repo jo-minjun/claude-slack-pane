@@ -32,14 +32,20 @@ export function setLayout(next: PaneLayout): void {
   layout = next
 }
 
-// The channel list as the left column draws it: channels, then direct messages, each under a heading.
+// The channel list as the left column draws it: channels, then direct messages, each under a heading and by name.
+// Slack lists them by ID, about the order they were made in.
 export type ChannelRow = { kind: 'heading'; label: string } | { kind: 'gap' } | { kind: 'channel'; channel: Channel }
 const CHANNELS_HEADING = 'CHANNELS'
 const DIRECT_HEADING = 'DIRECT MESSAGES'
 
 export function channelRows(items: Channel[]): ChannelRow[] {
   const section = (label: string, members: Channel[]): ChannelRow[] =>
-    members.length === 0 ? [] : [{ kind: 'heading', label }, ...members.map(channel => ({ kind: 'channel' as const, channel }))]
+    members.length === 0
+      ? []
+      : [
+          { kind: 'heading', label },
+          ...[...members].sort((a, b) => a.name.localeCompare(b.name)).map(channel => ({ kind: 'channel' as const, channel })),
+        ]
   const channels = section(CHANNELS_HEADING, items.filter(c => !isDirect(c)))
   const direct = section(DIRECT_HEADING, items.filter(isDirect))
   return channels.length > 0 && direct.length > 0 ? [...channels, { kind: 'gap' }, ...direct] : [...channels, ...direct]

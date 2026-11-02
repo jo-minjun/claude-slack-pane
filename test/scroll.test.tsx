@@ -8,7 +8,7 @@ const CHANNEL_COUNT = 30
 const channelId = (i: number) => `C${String(i).padStart(3, '0')}`
 const CHANNELS = `## My Channels (showing ${CHANNEL_COUNT})
 
-${Array.from({ length: CHANNEL_COUNT }, (_, i) => `### #c${i}\n- **ID:** ${channelId(i)}\n- **Type:** Public Channel\n- **Archived:** No\n`).join('\n')}`
+${Array.from({ length: CHANNEL_COUNT }, (_, i) => `### #c${String(i).padStart(2, '0')}\n- **ID:** ${channelId(i)}\n- **Type:** Public Channel\n- **Archived:** No\n`).join('\n')}`
 
 const tsOf = (i: number) => `${1793300000 + i * 60}.000100`
 // Newest first, as the Slack MCP server answers.

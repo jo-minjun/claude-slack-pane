@@ -6,7 +6,7 @@ It talks to Slack through the Slack MCP server you already connected to Claude C
 
 ## Features
 
-- **Two columns.** Left: every channel, private channel, DM and group DM you are in, plus message search. Right: the open channel or thread.
+- **Two columns.** Left: every channel, private channel, DM and group DM you are in, channels then DMs, each by name, plus message search. Right: the open channel or thread.
 - **Separate scrolling.** Each column scrolls on its own. The mouse wheel moves the column under the pointer. The scroll keys move the messages. When you scroll up, new messages do not move the view; `▼ Latest · N newer` above the input goes back to the newest and follows them again.
 - **Search.** Type a query and press Enter. Slack search modifiers work (`in:`, `from:`, `after:`). `☐ From me` is a filter: turn it on (`☑`) to search only your own messages, alone or with a query. A result opens as a thread view; `← #channel` goes to the message's place in the channel.
 - **Live view.** Only the open channel or thread is re-read, every 10 seconds by default. The header shows the refresh state (`↻ 10s · 14:05:12`, `↻ updating…`, `⏸ paused`, `⚠ failed …`).
