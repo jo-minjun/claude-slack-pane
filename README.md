@@ -6,6 +6,8 @@ A Claude Code mod that puts Slack in a pane beside the conversation. Read channe
 
 It talks to Slack through the Slack MCP server you already connected to Claude Code. It needs no Slack app and no token of its own.
 
+![The Slack pane: channels and DMs on the left, the open channel on the right, a selected message with its actions](docs/images/pane.png)
+
 ## Features
 
 - **Two columns.** Left: every channel, private channel, DM and group DM you are in, channels then DMs, each by name, the open one marked `>` in the accent color, plus message search. Right: the open channel or thread.
@@ -17,6 +19,22 @@ It talks to Slack through the Slack MCP server you already connected to Claude C
 - **Images.** `Attach file` takes a path (dragging a file onto the terminal types its path). `Paste image` sends the image on the clipboard (macOS only). A path to an existing image file (`/…` or `~/…`, png, jpg, gif, webp) typed or pasted into the message input becomes the attachment and leaves the text, so a terminal that pastes a clipboard image as a saved file's path attaches it too.
 - **Quote into Claude.** Select a message (press it again to let it go), then `Quote`. A short reference goes into the prompt box; when you send the prompt, the mod attaches the message's whole thread as context, the quoted message marked `▶`. Quoted text is marked as untrusted data.
 - **Copy link · Slack ↗.** At the right of the selected message's header. `Copy link` copies the message's Slack link; `Slack ↗` opens the message in Slack (macOS `open`). Edit or delete a message there: the Slack MCP cannot do either.
+
+## Screenshots
+
+**Quote into Claude.** `Quote` puts a reference into the prompt; Claude reads the whole thread when the prompt is sent.
+
+![A quoted thread in the prompt and Claude's summary of it](docs/images/quote.png)
+
+**Search.** `☑ From me` keeps your own messages; a DM shows whom it is with.
+
+![Search results for "release" with From me on](docs/images/search.png)
+
+**Images.** A pasted image becomes the attachment under the input, and is sent with the message.
+
+![An image attached under the message input](docs/images/attach.png)
+
+![The message and its image in Slack](docs/images/attach-slack.png)
 
 ## Requirements
 
