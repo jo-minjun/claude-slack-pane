@@ -48,7 +48,7 @@ export function channelColumn(
       <Text bold>Channels</Text>
       <Box key="search-frame" flexDirection="column" {...(Input ? { borderStyle: 'round', borderColor: 'promptBorder' } : {})}>
         {Input && (
-          <Input key="search" placeholder="Search messages" value={left.query} submitLabel="search" onSubmit={(value: string) => void searchMessages($, client, value.trim(), left.fromMe)} />
+          <Input key="search" placeholder="Search messages" value={left.query} submitLabel="go" onSubmit={(value: string) => void searchMessages($, client, value.trim(), left.fromMe)} />
         )}
         <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
           <Button key="from-me" label={fromMeLabel(left.fromMe)} onPress={() => void toggleFromMe()} />
