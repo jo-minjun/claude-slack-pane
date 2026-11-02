@@ -1,7 +1,7 @@
 import type { ElementTable, EngineInterface } from 'claude-code'
 
 import type { Loadable, Message, RefreshState, View } from '../../types'
-import { clockTime, displayWidth, fitWidth, formatTime, padWidth, plainEmoji } from '../format'
+import { clockTime, displayWidth, firstLine, fitWidth, formatTime, padWidth, plainEmoji } from '../format'
 import { loadOlder, openView } from '../poller'
 import { lastTop, type MessageFrame, messageHeight, newerBelow, scrollMessages, selectMessage } from '../scroll'
 import type { SlackClient } from '../slack/client'
@@ -138,7 +138,7 @@ export function messageList(
         </Box>
       )}
       {messages.isLoading && <Text dimColor>Loading…</Text>}
-      {messages.error !== undefined && <Text color="red">⚠ {messages.error}</Text>}
+      {messages.error !== undefined && <Text color="red">{firstLine(`⚠ ${messages.error}`, frame.width)}</Text>}
       {!messages.isLoading && items.length === 0 && messages.error === undefined && <Text dimColor>No messages</Text>}
       {drawn}
     </Box>

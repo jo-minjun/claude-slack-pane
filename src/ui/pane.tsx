@@ -1,6 +1,6 @@
 import type { EngineInterface, RenderInput } from 'claude-code'
 
-import { tzOffsetMinutes } from '../format'
+import { firstLine, tzOffsetMinutes } from '../format'
 import { messageFrame, setLayout } from '../scroll'
 import type { SlackClient } from '../slack/client'
 import {
@@ -53,7 +53,8 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
 
   return (
     <Box flexDirection="column">
-      {banner !== null && <Text color="red">{banner}</Text>}
+      {/* One row, as the columns below are sized: a reason can be long. */}
+      {banner !== null && <Text color="red">{firstLine(banner, Math.max(1, columns - 1))}</Text>}
       <Box flexDirection="row">
         {channelColumn($, client, els, leftWidth, columnRows, channels, left, view, clock)}
         <Box key="right" flexDirection="column" width={rightWidth} height={columnRows} overflow="hidden">

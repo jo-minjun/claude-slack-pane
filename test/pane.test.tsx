@@ -181,6 +181,12 @@ test('banner shows not connected', async ($, on) => {
   await run($, 'slack-pane')
   const ui = await $.ui.mount({ ...pane(), surface: 'terminal' })
   expect(await ui.find({ type: 'Text', text: /Slack MCP not connected/ })).toBeDefined()
+  // A long reason stays on one row, cut to its column, so the rows below keep their place.
+  const listError = (await ui.find({ type: 'Text', text: /^⚠ Slack MCP not connected/ }))!.text!
+  const leftWidth = (await ui.find({ key: 'left' }))!.props.width as number
+  expect(listError.includes('\n')).toBe(false)
+  expect(listError.length).toBeLessThanOrEqual(leftWidth - 2)
+  expect(listError.endsWith('…')).toBe(true)
   await ui.unmount()
 })
 

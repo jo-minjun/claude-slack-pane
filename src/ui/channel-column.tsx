@@ -59,7 +59,7 @@ export function channelColumn(
       </Box>
       {top > 0 && <Button key="more-up" label="▲ More" onPress={() => void scrollLeft($, client, -pageRows)} />}
       {list.isLoading && <Text dimColor>Loading…</Text>}
-      {list.error !== undefined && <Text color="red">⚠ {list.error}</Text>}
+      {list.error !== undefined && <Text color="red">{firstLine(`⚠ ${list.error}`, width - HIT_EDGE_CELLS)}</Text>}
       {isSearch && !list.isLoading && list.items.length === 0 && list.error === undefined && <Text dimColor>No results</Text>}
       {isSearch
         ? left.results.items.slice(top, top + pageSize).flatMap(hit => searchHit($, client, els, hit, width - HIT_EDGE_CELLS, clock))
