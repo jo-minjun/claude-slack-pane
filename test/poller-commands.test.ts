@@ -217,5 +217,5 @@ test('not connected sets the banner', async ($, on) => {
   })
   await start($)
   await run($, 'slack-pane')
-  expect(states.banner).toBe('Slack MCP not connected')
+  expect(states.banner).toMatch(/^Slack MCP not connected: plugin:slack:slack: /)
 })

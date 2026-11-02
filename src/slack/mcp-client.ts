@@ -138,7 +138,11 @@ export function createMcpClient(call: McpCall, readFile?: ReadFile): SlackClient
 
 export function slackClient($: EngineInterface, server: string): SlackClient {
   return createMcpClient(
-    (tool, args) => $.mcp.call(server, tool, args),
+    // A failed call names its server: a wrong name and a missing login read alike otherwise.
+    (tool, args) =>
+      $.mcp.call(server, tool, args).catch((error: unknown) => {
+        throw new Error(`${server}: ${error instanceof Error ? error.message : String(error)}`)
+      }),
     async path => String(await $.fs.read(path)),
   )
 }

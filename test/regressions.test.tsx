@@ -97,7 +97,7 @@ test('pane command reports a Slack failure instead of throwing', async ($, on) =
     throw new Error('no connected MCP tool')
   })
   await start($)
-  expect(await run($, 'slack-pane', '#general')).toBe('Slack MCP not connected')
+  expect(await run($, 'slack-pane', '#general')).toMatch(/^Slack MCP not connected: plugin:slack:slack: /)
   expect(await run($, 'slack-pane-search', 'deploy')).toBe('Searching: deploy')
 })
 
