@@ -11,13 +11,16 @@ const LABEL = {
   quoteThread: 'Quote thread',
   openThread: 'Open thread',
   copyLink: 'Copy link',
-  openInSlack: 'Open in Slack',
+  openInSlack: 'Slack ↗',
 } as const
 // The terminal draws a Button as `[ label ]`.
 const BUTTON_CHROME = 4
+const LINK_SEPARATOR = ' · '
+// Cells the selected message's header gives its link buttons, with a space before them.
+export const HEADER_LINKS_WIDTH = 1 + displayWidth(`${LABEL.copyLink}${LINK_SEPARATOR}${LABEL.openInSlack}`)
 
 function labels(view: View): string[] {
-  return [LABEL.quoteMessage, LABEL.quoteThread, ...(view.kind === 'channel' ? [LABEL.openThread] : []), LABEL.copyLink, LABEL.openInSlack]
+  return [LABEL.quoteMessage, LABEL.quoteThread, ...(view.kind === 'channel' ? [LABEL.openThread] : [])]
 }
 
 export function actionBarRows(view: View, width: number): number {
@@ -51,8 +54,18 @@ export function actionBar(
           }
         />
       )}
-      <Button key="copy-link" label={LABEL.copyLink} onPress={press => void copyLink($, client, view, selected, press.surface)} />
-      <Button key="open-in-slack" label={LABEL.openInSlack} onPress={() => void openInSlack($, client, view, selected)} />
+    </Box>
+  )
+}
+
+// The link controls at the right end of the selected message's header.
+export function headerLinks($: EngineInterface, client: SlackClient, els: ElementTable, view: View, selected: Message) {
+  const { Box, Text, Button } = els
+  return (
+    <Box flexDirection="row" flexShrink={0}>
+      <Button key="copy-link" plain dimColor label={LABEL.copyLink} onPress={press => void copyLink($, client, view, selected, press.surface)} />
+      <Text dimColor>{LINK_SEPARATOR}</Text>
+      <Button key="open-in-slack" plain dimColor label={LABEL.openInSlack} onPress={() => void openInSlack($, client, view, selected)} />
     </Box>
   )
 }

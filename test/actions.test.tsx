@@ -42,6 +42,7 @@ test('action bar appears on selection', async ($, on) => {
   await run($, 'slack-pane', '#general')
   const ui = await $.ui.mount(PANE)
   expect(await ui.find({ key: 'quote-message' })).toBeUndefined()
+  expect(await ui.find({ key: 'copy-link' })).toBeUndefined()
   await ui.press({ key: BOT })
   for (const key of ['quote-message', 'quote-thread', 'open-thread', 'copy-link', 'open-in-slack']) {
     expect(await ui.find({ key })).toBeDefined()

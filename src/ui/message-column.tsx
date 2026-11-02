@@ -6,7 +6,7 @@ import { loadOlder, openView } from '../poller'
 import { lastTop, type MessageFrame, messageHeight, newerBelow, scrollMessages, selectMessage } from '../scroll'
 import type { SlackClient } from '../slack/client'
 import { updateMessageTop } from '../state'
-import { actionBar } from './action-bar'
+import { actionBar, HEADER_LINKS_WIDTH, headerLinks } from './action-bar'
 
 export type Clock = { now: number; tz: number }
 
@@ -95,23 +95,35 @@ export function messageList(
     const gap = start + height
     const parts = []
     if (hasHeader || body.length > 0) {
+      const isSelected = m.ts === selectedTs
       const meta = messageMeta(m, clock)
-      const name = fitWidth(`${m.ts === selectedTs ? '> ' : ''}${plainEmoji(m.userName)}`, Math.max(1, frame.width - displayWidth(meta)))
+      const nameWidth = frame.width - displayWidth(meta) - (isSelected ? HEADER_LINKS_WIDTH : 0)
+      const name = fitWidth(`${isSelected ? '> ' : ''}${plainEmoji(m.userName)}`, Math.max(1, nameWidth))
+      const header = [
+        <Text key="name" bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'} hover={MESSAGE_HOVER}>
+          {name}
+        </Text>,
+        <Text key="meta" dimColor hover={MESSAGE_HOVER}>
+          {meta}
+        </Text>,
+      ]
+      // The selected header holds its own buttons, and a Button cannot hold another: it stands outside the message's.
+      const isHeaderApart = hasHeader && isSelected
+      const bodyText = `${hasHeader && !isHeaderApart ? '\n' : ''}${body.join('\n')}`
       parts.push(
         <Box key={`row:${m.ts}`} flexDirection="column" hover={MESSAGE_HOVER}>
-          <Button key={`msg:${m.ts}`} plain onPress={() => void selectMessage($, m.ts)}>
-            {hasHeader && (
-              <Text bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'} hover={MESSAGE_HOVER}>
-                {name}
-              </Text>
-            )}
-            {hasHeader && (
-              <Text dimColor hover={MESSAGE_HOVER}>
-                {meta}
-              </Text>
-            )}
-            {body.length > 0 && <Text hover={MESSAGE_HOVER}>{`${hasHeader ? '\n' : ''}${body.join('\n')}`}</Text>}
-          </Button>
+          {isHeaderApart && (
+            <Box flexDirection="row" justifyContent="space-between">
+              <Box flexDirection="row">{header}</Box>
+              {headerLinks($, client, els, view, m)}
+            </Box>
+          )}
+          {(body.length > 0 || (hasHeader && !isHeaderApart)) && (
+            <Button key={`msg:${m.ts}`} plain onPress={() => void selectMessage($, m.ts)}>
+              {hasHeader && !isHeaderApart && header}
+              {body.length > 0 && <Text hover={MESSAGE_HOVER}>{bodyText}</Text>}
+            </Button>
+          )}
           {isBarWhole && actionBar($, client, els, view, m)}
         </Box>,
       )
