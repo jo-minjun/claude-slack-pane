@@ -20,7 +20,7 @@ import {
   updateSelectedTs,
 } from './state'
 
-// Rows of the left column above and below its list: title, framed search, buttons, ▲ and ▼.
+// Rows of the left column above and below its list: title, the framed search with its buttons, ▲ and ▼.
 const LEFT_CHROME_ROWS = 7
 const SEARCH_HIT_ROWS = 2
 

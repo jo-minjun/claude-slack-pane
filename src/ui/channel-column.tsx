@@ -40,23 +40,23 @@ export function channelColumn(
   return (
     <Box key="left" flexDirection="column" width={width} height={rows} overflow="hidden" paddingRight={1}>
       <Text bold>Channels</Text>
-      {Input && (
-        <Box key="search-frame" borderStyle="round" borderColor="promptBorder">
+      <Box key="search-frame" flexDirection="column" {...(Input ? { borderStyle: 'round', borderColor: 'promptBorder' } : {})}>
+        {Input && (
           <Input key="search" placeholder="Search messages" value={left.query} submitLabel="search" onSubmit={(value: string) => void search(value.trim())} />
-        </Box>
-      )}
-      <Box flexDirection="row" gap={1}>
-        <Button
-          key="from-me"
-          label="From me"
-          onPress={async () => {
-            const id = await myUserId($, client)
-            if (id !== undefined) await search(left.query, `from:<@${id}>`)
-          }}
-        />
-        {isSearch && (
-          <Button key="clear" label="× Clear" onPress={() => void updateLeft($, l => ({ ...l, mode: 'channels' as const, top: 0 }))} />
         )}
+        <Box flexDirection="row" gap={1}>
+          <Button
+            key="from-me"
+            label="From me"
+            onPress={async () => {
+              const id = await myUserId($, client)
+              if (id !== undefined) await search(left.query, `from:<@${id}>`)
+            }}
+          />
+          {isSearch && (
+            <Button key="clear" label="× Clear" onPress={() => void updateLeft($, l => ({ ...l, mode: 'channels' as const, top: 0 }))} />
+          )}
+        </Box>
       </Box>
       {top > 0 && <Button key="more-up" label="▲ More" onPress={() => void scrollLeft($, client, -pageRows)} />}
       {list.isLoading && <Text dimColor>Loading…</Text>}
