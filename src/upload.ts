@@ -12,6 +12,10 @@ const MIME: Record<string, string> = {
 }
 const CLIPBOARD_FILE = 'clipboard.png'
 
+export function isImageName(name: string): boolean {
+  return MIME[name.split('.').pop()?.toLowerCase() ?? ''] !== undefined
+}
+
 export class UploadError extends Error {}
 
 export function normalizePath(raw: string, home: string): string {

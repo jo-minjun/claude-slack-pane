@@ -82,6 +82,33 @@ test('dragged paths lose quotes and escapes', async ($, on) => {
   await ui.unmount()
 })
 
+test('a pasted image path in the composer becomes the attachment and leaves the text', async ($, on) => {
+  engine(on, slack)
+  const runs = processes(on, fileSystem)
+  await start($)
+  await run($, 'slack-pane', '#general')
+  const ui = await $.ui.mount(PANE)
+  await ui.input({ key: 'composer', text: 'look /var/folders/T/orca-paste-1.png here', kind: 'change' })
+  expect(runs.map(r => r.argv)).toEqual([['wc', '-c', '/var/folders/T/orca-paste-1.png']])
+  expect((await ui.find({ key: 'composer' }))?.props.value).toBe('look here')
+  expect(await ui.find({ type: 'Text', text: 'orca-paste-1.png' })).toBeDefined()
+  expect(await ui.find({ key: 'remove-attachment' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a composer path that is no image file stays text and is looked up once', async ($, on) => {
+  engine(on, slack)
+  const runs = processes(on, fileSystem)
+  await start($)
+  await run($, 'slack-pane', '#general')
+  const ui = await $.ui.mount(PANE)
+  await ui.input({ key: 'composer', text: 'see a.png and /tmp/missing.png', kind: 'change' })
+  await ui.input({ key: 'composer', text: 'see a.png and /tmp/missing.png ok', kind: 'change' })
+  expect(runs.map(r => r.argv)).toEqual([['wc', '-c', '/tmp/missing.png']])
+  expect(await ui.find({ key: 'remove-attachment' })).toBeUndefined()
+  await ui.unmount()
+})
+
 test('missing or non image files are refused before upload', async ($, on) => {
   const { sent } = engine(on, slack)
   processes(on, fileSystem)

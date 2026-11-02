@@ -1,7 +1,7 @@
 import type { ElementTable, EngineInterface } from 'claude-code'
 
 import type { ComposerState, View } from '../../types'
-import { attachFromClipboard, attachFromPath, destination, removeAttachment, sendComposer } from '../send'
+import { attachFromClipboard, attachFromPath, attachPastedPath, destination, removeAttachment, sendComposer } from '../send'
 import { updateComposer } from '../state'
 import type { SlackClient } from '../slack/client'
 
@@ -26,6 +26,7 @@ export function composerBox(
           submitLabel="send"
           placeholder={destination(view)}
           value={composer.draft ?? ''}
+          onInput={(value: string) => void attachPastedPath($, value)}
           onSubmit={(value: string) => void sendComposer($, client, view, value)}
         />
       </Box>

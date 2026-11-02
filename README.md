@@ -11,7 +11,7 @@ It talks to Slack through the Slack MCP server you already connected to Claude C
 - **Search.** Type a query and press Enter. Slack search modifiers work (`in:`, `from:`, `after:`). `☐ From me` is a filter: turn it on (`☑`) to search only your own messages, alone or with a query. A result opens as a thread view; `← #channel` goes to the message's place in the channel.
 - **Live view.** Only the open channel or thread is re-read, every 10 seconds by default. The header shows the refresh state (`↻ 10s · 14:05:12`, `↻ updating…`, `⏸ paused`, `⚠ failed …`).
 - **Send.** The empty input says where a message goes (`Message #general`, `Reply in thread · #general`), and the header names the channel while you type. Enter sends at once.
-- **Images.** `Attach file` takes a path (dragging a file onto the terminal types its path). `Paste image` sends the image on the clipboard (macOS only).
+- **Images.** `Attach file` takes a path (dragging a file onto the terminal types its path). `Paste image` sends the image on the clipboard (macOS only). A path to an existing image file (`/…` or `~/…`, png, jpg, gif, webp) typed or pasted into the message input becomes the attachment and leaves the text, so a terminal that pastes a clipboard image as a saved file's path attaches it too.
 - **Quote into Claude.** Select a message, then `Quote message` or `Quote thread`. A short reference goes into the prompt box; when you send the prompt, the mod attaches the message or the whole thread as context. Quoted text is marked as untrusted data.
 - **Copy link · Slack ↗.** At the right of the selected message's header. `Copy link` copies the message's Slack link; `Slack ↗` opens the message in Slack (macOS `open`). Edit or delete a message there: the Slack MCP cannot do either.
 
