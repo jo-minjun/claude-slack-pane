@@ -1,20 +1,23 @@
 import type { EngineInterface, UiScrollInput } from 'claude-code'
 
-import type { ChannelsState, LeftState, Message } from '../types'
+import type { ChannelsState, LeftState, Message, View } from '../types'
 import { loadChannels, runSearch } from './actions'
 import { splitQuery } from './commands'
 import { rowsFor } from './format'
 import { loadOlder } from './poller'
 import type { SlackClient } from './slack/client'
+import { actionBarRows } from './ui/action-bar'
 import {
   readChannels,
   readLeft,
   readMessageBottomTs,
   readMessages,
+  readSelectedTs,
   readView,
   updateChannels,
   updateLeft,
   updateMessageBottomTs,
+  updateSelectedTs,
 } from './state'
 
 // Rows of the left column above and below its list: title, search, buttons, ▲ and ▼.
@@ -45,8 +48,10 @@ export function leftPageSize(rows: number, isSearch: boolean): number {
 // The blank row the message list draws between two messages.
 export const MESSAGE_GAP_ROWS = 1
 
-function messageRows(m: Message, width: number): number {
-  return 1 + rowsFor(m.text, width) + (m.hasFile ? 1 : 0) + MESSAGE_GAP_ROWS
+// Rows each message takes; the selected one also carries its action bar.
+export function messageHeights(items: Message[], view: View, selectedTs: string | null, width: number): number[] {
+  const barRows = actionBarRows(view, width)
+  return items.map(m => 1 + rowsFor(m.text, width) + (m.hasFile ? 1 : 0) + MESSAGE_GAP_ROWS + (m.ts === selectedTs ? barRows : 0))
 }
 
 // How many items from `from`, walking by `step`, fit `rows`; the first one always counts.
@@ -68,18 +73,29 @@ function windowEnd(items: Message[], bottomTs: string | null): number {
 }
 
 // The messages that fit `rows` ending at `bottomTs` (the newest when null), as [start, end).
-export function messageWindow(items: Message[], bottomTs: string | null, rows: number, width: number) {
+export function messageWindow(items: Message[], bottomTs: string | null, rows: number, heights: number[]) {
   const end = windowEnd(items, bottomTs)
-  return { start: end - fill(items.length, end - 1, -1, rows, i => messageRows(items[i]!, width)), end }
+  return { start: end - fill(items.length, end - 1, -1, rows, i => heights[i]!), end }
+}
+
+// The bottom message of a window that starts at `start`; null when it reaches the newest.
+function bottomFrom(items: Message[], start: number, rows: number, heights: number[]): string | null {
+  const end = start + fill(items.length, start, 1, rows, i => heights[i]!)
+  return end >= items.length ? null : items[end - 1]!.ts
 }
 
 // Moves the right column by `by` rows, negative toward older messages.
 export async function scrollMessages($: EngineInterface, client: SlackClient, by: number): Promise<void> {
   if (!layout || by === 0) return
   const { messageRows: rows, rightWidth: width } = layout
-  const [view, before, bottomTs] = await Promise.all([readView($), readMessages($), readMessageBottomTs($)])
+  const [view, before, bottomTs, selectedTs] = await Promise.all([
+    readView($),
+    readMessages($),
+    readMessageBottomTs($),
+    readSelectedTs($),
+  ])
   if (!view) return
-  const shown = messageWindow(before.items, bottomTs, rows, width)
+  const shown = messageWindow(before.items, bottomTs, rows, messageHeights(before.items, view, selectedTs, width))
   const isAtOldest = by < 0 && shown.start === 0 && view.kind === 'channel'
   const isAtNewest = by > 0 && shown.end === before.items.length && view.kind === 'thread' && before.cursor !== undefined
   let items = before.items
@@ -87,7 +103,7 @@ export async function scrollMessages($: EngineInterface, client: SlackClient, by
     await loadOlder($, client)
     items = (await readMessages($)).items
   }
-  const heights = items.map(m => messageRows(m, width))
+  const heights = messageHeights(items, view, selectedTs, width)
   const heightAt = (i: number) => heights[i]!
   const step = by < 0 ? -1 : 1
   const anchor = windowEnd(items, bottomTs)
@@ -126,4 +142,17 @@ export async function scrollLeft($: EngineInterface, client: SlackClient, by: nu
 export async function scrollPane($: EngineInterface, client: SlackClient, e: UiScrollInput): Promise<void> {
   const isOverLeft = layout !== undefined && e.pointer !== undefined && e.pointer.column < layout.leftWidth
   await (isOverLeft ? scrollLeft($, client, e.by) : scrollMessages($, client, e.by))
+}
+
+// Selects a message and keeps it, with its action bar, inside the window.
+export async function selectMessage($: EngineInterface, ts: string): Promise<void> {
+  await updateSelectedTs($, () => ts)
+  const [view, messages, bottomTs] = await Promise.all([readView($), readMessages($), readMessageBottomTs($)])
+  if (!layout || !view) return
+  const { items } = messages
+  const index = items.findIndex(m => m.ts === ts)
+  const heights = messageHeights(items, view, ts, layout.rightWidth)
+  if (index === -1 || index >= messageWindow(items, bottomTs, layout.messageRows, heights).start) return
+  const next = bottomFrom(items, index, layout.messageRows, heights)
+  await updateMessageBottomTs($, () => next)
 }

@@ -16,13 +16,13 @@ import {
   readView,
 } from '../state'
 import { channelColumn } from './channel-column'
-import { actionBar, composerBox } from './composer'
+import { composerBox } from './composer'
 import { headerRow, messageList, refreshText } from './message-column'
 
 const MIN_LEFT = 22
 const LEFT_SHARE = 0.3
-// Header, ▲ Older, action bar, and the composer with its frame.
-const RIGHT_RESERVED_ROWS = 12
+// Header, ▲ Older, and the composer with its frame.
+const RIGHT_RESERVED_ROWS = 10
 
 export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, client: SlackClient) {
   const els = $.ui.resolve(e)
@@ -47,7 +47,6 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
   const columnRows = Math.max(1, rows - (banner === null ? 0 : 1))
   const messageRows = Math.max(3, columnRows - RIGHT_RESERVED_ROWS)
   setLayout({ leftWidth, leftRows: columnRows, rightWidth, messageRows })
-  const selected = messages.items.find(m => m.ts === selectedTs)
   const clock = { now: await $.clock.now(), tz: tzOffsetMinutes() }
 
   return (
@@ -65,7 +64,6 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
                 {messageList($, client, els, view, messages, selectedTs, bottomTs, rightWidth, messageRows, clock)}
               </Box>
               <Box flexDirection="column" flexShrink={0}>
-                {selected !== undefined && actionBar($, client, els, view, selected)}
                 {composerBox($, client, els, view, composer)}
               </Box>
             </>

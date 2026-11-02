@@ -3,9 +3,9 @@ import type { ElementTable, EngineInterface } from 'claude-code'
 import type { Loadable, Message, RefreshState, View } from '../../types'
 import { clockTime, formatTime } from '../format'
 import { loadOlder, openView } from '../poller'
-import { MESSAGE_GAP_ROWS, messageWindow, scrollMessages } from '../scroll'
+import { MESSAGE_GAP_ROWS, messageHeights, messageWindow, scrollMessages, selectMessage } from '../scroll'
 import type { SlackClient } from '../slack/client'
-import { updateSelectedTs } from '../state'
+import { actionBar } from './action-bar'
 
 export type Clock = { now: number; tz: number }
 
@@ -71,7 +71,7 @@ export function messageList(
 ) {
   const { Box, Text, Button } = els
   const canLoadOlder = messages.items.length > 0 && (view.kind === 'channel' || messages.cursor !== undefined)
-  const { start, end } = messageWindow(messages.items, bottomTs, rows, width)
+  const { start, end } = messageWindow(messages.items, bottomTs, rows, messageHeights(messages.items, view, selectedTs, width))
   const shown = messages.items.slice(start, end)
   const pressOlder = () => (view.kind === 'thread' ? loadOlder($, client) : scrollMessages($, client, -rows))
   return (
@@ -82,13 +82,16 @@ export function messageList(
       {!messages.isLoading && messages.items.length === 0 && messages.error === undefined && <Text dimColor>No messages</Text>}
       <Box flexDirection="column" gap={MESSAGE_GAP_ROWS}>
         {shown.map(m => (
-          <Button key={`msg:${m.ts}`} plain onPress={() => void updateSelectedTs($, () => m.ts)}>
-            <Text bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'}>
-              {`${m.ts === selectedTs ? '> ' : ''}${m.userName}`}
-            </Text>
-            <Text dimColor>{messageMeta(m, clock)}</Text>
-            <Text>{`\n${m.text === '' ? ' ' : m.text}${m.hasFile ? '\n[file]' : ''}`}</Text>
-          </Button>
+          <Box key={`row:${m.ts}`} flexDirection="column">
+            <Button key={`msg:${m.ts}`} plain onPress={() => void selectMessage($, m.ts)}>
+              <Text bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'}>
+                {`${m.ts === selectedTs ? '> ' : ''}${m.userName}`}
+              </Text>
+              <Text dimColor>{messageMeta(m, clock)}</Text>
+              <Text>{`\n${m.text === '' ? ' ' : m.text}${m.hasFile ? '\n[file]' : ''}`}</Text>
+            </Button>
+            {m.ts === selectedTs && actionBar($, client, els, view, m)}
+          </Box>
         ))}
       </Box>
       {view.kind === 'channel' && view.anchorTs !== undefined && (

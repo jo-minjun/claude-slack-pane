@@ -1,43 +1,9 @@
 import type { ElementTable, EngineInterface } from 'claude-code'
 
-import type { ComposerState, Message, View } from '../../types'
-import { copyLink, quoteMessage } from '../actions'
-import { openView } from '../poller'
+import type { ComposerState, View } from '../../types'
 import { attachFromClipboard, attachFromPath, destination, removeAttachment, sendComposer } from '../send'
 import { updateComposer } from '../state'
 import type { SlackClient } from '../slack/client'
-
-export function actionBar(
-  $: EngineInterface,
-  client: SlackClient,
-  els: ElementTable,
-  view: View,
-  selected: Message,
-) {
-  const { Box, Button } = els
-  return (
-    <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
-      <Button key="quote-message" label="Quote message" onPress={() => void quoteMessage($, 'message', view, selected)} />
-      <Button key="quote-thread" label="Quote thread" onPress={() => void quoteMessage($, 'thread', view, selected)} />
-      {view.kind === 'channel' && (
-        <Button
-          key="open-thread"
-          label="Open thread"
-          onPress={() =>
-            void openView($, client, {
-              kind: 'thread',
-              channelId: view.channelId,
-              label: view.label,
-              threadTs: selected.ts,
-              back: view.anchorTs === undefined ? {} : { anchorTs: view.anchorTs },
-            })
-          }
-        />
-      )}
-      <Button key="copy-link" label="Copy link" onPress={press => void copyLink($, client, view, selected, press.surface)} />
-    </Box>
-  )
-}
 
 export function composerBox(
   $: EngineInterface,

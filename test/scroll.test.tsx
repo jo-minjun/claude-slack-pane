@@ -135,3 +135,25 @@ test('wheel at the oldest message stops asking once nothing older is left', asyn
   expect(count(sent, 'slack_read_channel')).toBe(2)
   await ui.unmount()
 })
+
+test('the action bar is drawn under the selected message', async ($, on) => {
+  engine(on, slack({ newest: 40 }))
+  const ui = await openFirstChannel($)
+  expect(await ui.find({ key: 'quote-message' })).toBeUndefined()
+  await ui.press({ key: `msg:${tsOf(38)}` })
+  const row = await ui.find({ key: `row:${tsOf(38)}` })
+  expect(JSON.stringify(row?.children)).toContain('"quote-message"')
+  expect(JSON.stringify((await ui.find({ key: `row:${tsOf(39)}` }))?.children)).not.toContain('"quote-message"')
+  await ui.unmount()
+})
+
+test('selecting the top message keeps it and its action bar in view', async ($, on) => {
+  engine(on, slack({ newest: 40 }))
+  const ui = await openFirstChannel($)
+  const top = (await ui.findAll({ type: 'Button' })).map(b => b.key).find(k => k?.startsWith('msg:'))
+  expect(top).toBe(`msg:${tsOf(37)}`)
+  await ui.press({ key: `msg:${tsOf(37)}` })
+  expect(await ui.find({ key: `msg:${tsOf(37)}` })).toBeDefined()
+  expect(await ui.find({ key: 'quote-message' })).toBeDefined()
+  await ui.unmount()
+})

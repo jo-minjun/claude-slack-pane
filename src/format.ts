@@ -57,12 +57,11 @@ export function firstLine(text: string, width: number): string {
   return fitWidth(text.split('\n')[0] ?? '', width)
 }
 
-// Rows a line takes when the terminal wraps it at spaces, as Text's default wrap does.
-function wrappedRows(line: string, width: number): number {
+// Rows taken by items of these widths laid out one cell apart, a new row when the next does not fit.
+export function packedRows(widths: number[], width: number): number {
   let rows = 1
   let used = 0
-  for (const word of line.split(' ')) {
-    const w = displayWidth(word)
+  for (const w of widths) {
     const need = used === 0 ? w : used + 1 + w
     if (need <= width) {
       used = need
@@ -80,5 +79,6 @@ function wrappedRows(line: string, width: number): number {
 
 export function rowsFor(text: string, width: number): number {
   const cells = Math.max(1, width)
-  return text.split('\n').reduce((sum, line) => sum + wrappedRows(line, cells), 0)
+  // The terminal wraps a line at its spaces, as Text's default wrap does.
+  return text.split('\n').reduce((sum, line) => sum + packedRows(line.split(' ').map(displayWidth), cells), 0)
 }
