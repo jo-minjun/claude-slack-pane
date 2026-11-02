@@ -20,8 +20,8 @@ import {
   updateSelectedTs,
 } from './state'
 
-// Rows of the left column above and below its list: title, search, buttons, ▲ and ▼.
-const LEFT_CHROME_ROWS = 5
+// Rows of the left column above and below its list: title, framed search, buttons, ▲ and ▼.
+const LEFT_CHROME_ROWS = 7
 const SEARCH_HIT_ROWS = 2
 
 // What the last drawing laid out; a wheel tick is read against it.

@@ -41,7 +41,9 @@ export function channelColumn(
     <Box key="left" flexDirection="column" width={width} height={rows} overflow="hidden" paddingRight={1}>
       <Text bold>Channels</Text>
       {Input && (
-        <Input key="search" placeholder="Search messages" value={left.query} submitLabel="search" onSubmit={(value: string) => void search(value.trim())} />
+        <Box key="search-frame" borderStyle="round" borderColor="promptBorder">
+          <Input key="search" placeholder="Search messages" value={left.query} submitLabel="search" onSubmit={(value: string) => void search(value.trim())} />
+        </Box>
       )}
       <Box flexDirection="row" gap={1}>
         <Button
