@@ -46,7 +46,7 @@ const DETAILED = 'detailed'
 const defined = (args: Record<string, unknown>) =>
   Object.fromEntries(Object.entries(args).filter(([, value]) => value !== undefined))
 
-export function createMcpClient(call: McpCall, readFile?: ReadFile): SlackClient {
+export function createMcpClient(call: McpCall, readFile?: ReadFile, server = ''): SlackClient {
   const fields = async (tool: string, args: Record<string, unknown>) => {
     let result: McpToolResult
     try {
@@ -63,6 +63,7 @@ export function createMcpClient(call: McpCall, readFile?: ReadFile): SlackClient
   }
 
   return {
+    server,
     async me() {
       const { result = '' } = await fields('slack_read_user_profile', { response_format: DETAILED })
       return parseProfile(result)
@@ -144,5 +145,6 @@ export function slackClient($: EngineInterface, server: string): SlackClient {
         throw new Error(`${server}: ${error instanceof Error ? error.message : String(error)}`)
       }),
     async path => String(await $.fs.read(path)),
+    server,
   )
 }

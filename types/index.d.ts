@@ -81,6 +81,8 @@ declare module 'claude-code' {
       intervalSeconds: number
       paneOpen: boolean
       banner: string | null
+      // The user each MCP server is logged in as this session, by server name.
+      myUserIds: Shaped<Record<string, string>>
     }
   }
 }

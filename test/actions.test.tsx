@@ -82,7 +82,7 @@ test('quote on reply keeps parent', async ($, on) => {
 })
 
 test('copy link copies and toasts', async ($, on) => {
-  const { copied, toasts } = engine(on, slack, { workspaceDomain: 'acme.slack.com' })
+  const { copied, toasts } = engine(on, slack, { 'workspaceDomain:U0FAKE0001': 'acme.slack.com' })
   await start($)
   await run($, 'slack-pane', '#general')
   const ui = await $.ui.mount(PANE)
@@ -90,6 +90,18 @@ test('copy link copies and toasts', async ($, on) => {
   await ui.press({ key: 'copy-link' })
   expect(copied).toEqual(['https://acme.slack.com/archives/C0FAKE0001/p1793337289953239'])
   expect(toasts).toEqual(['Link copied'])
+  await ui.unmount()
+})
+
+test('a user and a domain another workspace left in the store are not used', async ($, on) => {
+  const { sent, copied } = engine(on, slack, { myUserId: 'U0OTHER', workspaceDomain: 'other.slack.com', 'workspaceDomain:U0OTHER': 'other.slack.com' })
+  await start($)
+  await run($, 'slack-pane', '#general')
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: BOT })
+  await ui.press({ key: 'copy-link' })
+  expect(sent.find(s => s.tool === 'slack_search_public_and_private')?.args.filters).toBe('from:<@U0FAKE0001>')
+  expect(copied).toEqual(['https://acme.slack.com/archives/C0FAKE0001/p1793337289953239'])
   await ui.unmount()
 })
 
@@ -133,7 +145,7 @@ const opener = (on: Parameters<typeof engine>[0], exitCode: number) => {
 }
 
 test('open in slack opens the message link', async ($, on) => {
-  const { toasts } = engine(on, slack, { workspaceDomain: 'acme.slack.com' })
+  const { toasts } = engine(on, slack, { 'workspaceDomain:U0FAKE0001': 'acme.slack.com' })
   const runs = opener(on, 0)
   await start($)
   await run($, 'slack-pane', '#general')
@@ -146,7 +158,7 @@ test('open in slack opens the message link', async ($, on) => {
 })
 
 test('open in slack says when it fails', async ($, on) => {
-  const { toasts } = engine(on, slack, { workspaceDomain: 'acme.slack.com' })
+  const { toasts } = engine(on, slack, { 'workspaceDomain:U0FAKE0001': 'acme.slack.com' })
   opener(on, 1)
   await start($)
   await run($, 'slack-pane', '#general')

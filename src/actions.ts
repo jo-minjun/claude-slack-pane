@@ -1,13 +1,13 @@
 import type { EngineInterface, RenderSurface } from 'claude-code'
 
-import type { Channel, Message, View } from '../types'
+import type { Channel, Message, SearchHit, View } from '../types'
 import { clearBanner, reportError } from './errors'
 import { channelLabel, formatTime, tzOffsetMinutes } from './format'
 import { attachQuotes, extractQuotes, type QuoteRef, quoteToken } from './quote'
 import { restartTimer, stopTimer } from './poller'
 import type { SlackClient } from './slack/client'
 import { domainFromPermalink, messageLink } from './slack/link'
-import { readChannels, updateChannels, updateLeft, updatePaneOpen } from './state'
+import { readChannels, readMyUserIds, updateChannels, updateLeft, updateMyUserIds, updatePaneOpen } from './state'
 
 export const PANE_ID = 'slack'
 
@@ -28,12 +28,14 @@ export async function loadChannels($: EngineInterface, client: SlackClient, curs
   }
 }
 
+// Asked once a session for each server, never kept across sessions: another session's server, or this
+// one logged in again, can be another workspace's user.
 export async function myUserId($: EngineInterface, client: SlackClient): Promise<string | undefined> {
-  const stored = await $.store.get('myUserId')
-  if (typeof stored === 'string') return stored
+  const known = (await readMyUserIds($))[client.server]
+  if (known !== undefined) return known
   try {
     const id = await client.me()
-    await $.store.set('myUserId', id)
+    await updateMyUserIds($, ids => ({ ...ids, [client.server]: id }))
     return id
   } catch (error) {
     await reportError($, error)
@@ -73,8 +75,7 @@ export async function runSearch(
   }))
   try {
     const page = await client.search(keywords, filters, cursor)
-    const domain = page.items.map(hit => domainFromPermalink(hit.permalink)).find(Boolean)
-    if (domain !== undefined) await $.store.set('workspaceDomain', domain)
+    await rememberDomain($, client, page.items)
     await updateLeft($, l => ({
       ...l,
       results: {
@@ -107,16 +108,23 @@ export async function quoteMessage($: EngineInterface, view: View, m: Message): 
   await $.prompt.fill({ text: `${token} `, mode: 'insert' })
 }
 
+// A workspace's domain, kept across sessions under the user it was found for: a user ID is one workspace's.
+const domainKey = (userId: string) => `workspaceDomain:${userId}`
+
+async function rememberDomain($: EngineInterface, client: SlackClient, hits: SearchHit[]): Promise<string | undefined> {
+  const domain = hits.map(hit => domainFromPermalink(hit.permalink)).find(Boolean)
+  const id = (await readMyUserIds($))[client.server]
+  if (domain !== undefined && id !== undefined) await $.store.set(domainKey(id), domain)
+  return domain
+}
+
 async function workspaceDomain($: EngineInterface, client: SlackClient): Promise<string | undefined> {
-  const stored = await $.store.get('workspaceDomain')
-  if (typeof stored === 'string') return stored
   const id = await myUserId($, client)
   if (id === undefined) return undefined
+  const stored = await $.store.get(domainKey(id))
+  if (typeof stored === 'string') return stored
   try {
-    const page = await client.search([], `from:<@${id}>`)
-    const domain = page.items.map(hit => domainFromPermalink(hit.permalink)).find(Boolean)
-    if (domain !== undefined) await $.store.set('workspaceDomain', domain)
-    return domain
+    return await rememberDomain($, client, (await client.search([], `from:<@${id}>`)).items)
   } catch (error) {
     await reportError($, error)
     return undefined

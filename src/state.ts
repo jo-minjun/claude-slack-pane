@@ -31,6 +31,7 @@ const refresh = atom({ plugin: 'slack-pane', key: 'refresh' } as const, idle, SH
 const intervalSeconds = atom({ plugin: 'slack-pane', key: 'intervalSeconds' } as const, 10)
 const paneOpen = atom({ plugin: 'slack-pane', key: 'paneOpen' } as const, false)
 const banner = atom({ plugin: 'slack-pane', key: 'banner' } as const, null as string | null)
+const myUserIds = atom({ plugin: 'slack-pane', key: 'myUserIds' } as const, {} as Record<string, string>, SHAPE)
 
 // The engine's scan only accepts atoms declared in the calling file, so every
 // read and write of these values goes through the functions below.
@@ -100,4 +101,10 @@ export function readBanner($: $) {
 }
 export function updateBanner($: $, fn: (value: string | null) => string | null) {
   return update($, banner, fn)
+}
+export function readMyUserIds($: $) {
+  return read($, myUserIds)
+}
+export function updateMyUserIds($: $, fn: (value: Record<string, string>) => Record<string, string>) {
+  return update($, myUserIds, fn)
 }

@@ -19,6 +19,8 @@ export type ReadChannelOptions = {
 }
 
 export interface SlackClient {
+  // The MCP server's name: whom it is logged in as can differ from another server's.
+  readonly server: string
   me(): Promise<string>
   listChannels(cursor?: string): Promise<Page<Channel>>
   findChannel(name: string): Promise<Channel | undefined>
