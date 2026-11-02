@@ -15,9 +15,10 @@ import {
   readSelectedTs,
   readView,
 } from '../state'
-import { channelColumn, MIN_LEFT_WIDTH } from './channel-column'
+import { channelColumn } from './channel-column'
 import { composerBox } from './composer'
 import { headerRow, latestRow, messageList, refreshText } from './message-column'
+import { MIN_LEFT_WIDTH } from './search-frame'
 
 const LEFT_SHARE = 0.3
 // Header and its rule, ▲ Older and the blank under it, the row above the composer (▼ Latest or blank), and the composer with its frame.

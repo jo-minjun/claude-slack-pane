@@ -8,18 +8,12 @@ import { channelRows, leftItemRows, leftList, leftPageSize, scrollLeft } from '.
 import type { SlackClient } from '../slack/client'
 import { updateLeft } from '../state'
 import { type Clock, MESSAGE_HOVER } from './message-column'
+import { CLEAR_LABEL, fromMeLabel } from './search-frame'
 
 // A button draws `[ ` and ` ]` around its label; the column keeps one cell of padding.
 const BUTTON_CHROME = 5
 // The column's padding, and a cell for a symbol the width table misses, so a hit's row never wraps.
 const HIT_EDGE_CELLS = 2
-const FROM_ME_LABEL = 'From me'
-const CLEAR_LABEL = '× Clear'
-const fromMeLabel = (isOn: boolean) => `${isOn ? '☑' : '☐'} ${FROM_ME_LABEL}`
-// The narrowest column whose search frame holds both its buttons on one row: wider than the frame, a row
-// draws over the right column. The buttons and the cell between them, the frame's two sides, the padding, a spare cell.
-export const MIN_LEFT_WIDTH =
-  displayWidth(fromMeLabel(false)) + displayWidth(CLEAR_LABEL) + 2 * (BUTTON_CHROME - 1) + 1 + 2 + HIT_EDGE_CELLS
 
 export function hitLabel(hit: SearchHit): string {
   return hit.channelId.startsWith('D') ? `@${hit.channelName}` : `#${hit.channelName}`
@@ -39,7 +33,7 @@ export function channelColumn(
   const { Box, Text, Button } = els
   const Input = 'Input' in els ? (els as ElementTable<'terminal'>).Input : undefined
   const { isSearch, list, top, length } = leftList(left, channels)
-  const pageSize = leftPageSize(rows, isSearch)
+  const pageSize = leftPageSize(rows, width, isSearch)
   const pageRows = pageSize * leftItemRows(isSearch)
   const hasMoreLoaded = top + pageSize < length
   const toggleFromMe = async () => {
@@ -56,7 +50,7 @@ export function channelColumn(
         {Input && (
           <Input key="search" placeholder="Search messages" value={left.query} submitLabel="search" onSubmit={(value: string) => void searchMessages($, client, value.trim(), left.fromMe)} />
         )}
-        <Box flexDirection="row" gap={1}>
+        <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
           <Button key="from-me" label={fromMeLabel(left.fromMe)} onPress={() => void toggleFromMe()} />
           {isSearch && (
             <Button key="clear" label={CLEAR_LABEL} onPress={() => void updateLeft($, l => ({ ...l, mode: 'channels' as const, top: 0 }))} />

@@ -1,7 +1,9 @@
 import { expect, test } from 'claude-code/testing'
 
 import { displayWidth, fitWidth, plainEmoji, wrapText } from '../src/format'
+import { leftPageSize } from '../src/scroll'
 import { createMcpClient } from '../src/slack/mcp-client'
+import { MIN_LEFT_WIDTH, searchButtonRows } from '../src/ui/search-frame'
 import { CHANNEL } from './fixtures/channel'
 import { PROFILE } from './fixtures/profile'
 import { engine, ok, run, start, type McpAnswer } from './harness'
@@ -104,4 +106,14 @@ test('emoji are drawn one glyph at a time and wide symbols count two cells', () 
   expect(plainEmoji('🧑\u200D🎄\u{1F3FC} 이번 주 ✔\uFE0F')).toBe('🧑🎄 이번 주 ✔')
   expect(displayWidth('✅❌⭐⚡⬜')).toBe(10)
   expect(displayWidth('🧑🎄')).toBe(4)
+})
+
+test('a search frame narrower than its buttons wraps them and gives the list a row less', () => {
+  expect(MIN_LEFT_WIDTH).toBe(29)
+  expect(searchButtonRows(29, true)).toBe(1)
+  expect(searchButtonRows(22, true)).toBe(2)
+  expect(searchButtonRows(22, false)).toBe(1)
+  // Three rows a hit: 22 rows hold five beside one button row, four beside two.
+  expect(leftPageSize(22, 29, true)).toBe(5)
+  expect(leftPageSize(22, 22, true)).toBe(4)
 })

@@ -7,6 +7,7 @@ import { isDirect, plainEmoji, wrapText } from './format'
 import { loadOlder } from './poller'
 import type { SlackClient } from './slack/client'
 import { actionBarRows } from './ui/action-bar'
+import { searchButtonRows } from './ui/search-frame'
 import {
   readChannels,
   readLeft,
@@ -20,8 +21,8 @@ import {
   updateSelectedTs,
 } from './state'
 
-// Rows of the left column above and below its list: title, the framed search with its buttons, ▲ and ▼.
-const LEFT_CHROME_ROWS = 7
+// Rows of the left column above and below its list but the search buttons': title, the frame's two sides and its input, ▲ and ▼.
+const LEFT_FIXED_ROWS = 6
 // A search hit: its channel and time, its author and text, and a blank row after it.
 const SEARCH_HIT_ROWS = 3
 
@@ -62,8 +63,9 @@ export function leftItemRows(isSearch: boolean): number {
   return isSearch ? SEARCH_HIT_ROWS : 1
 }
 
-export function leftPageSize(rows: number, isSearch: boolean): number {
-  return Math.max(1, Math.floor((rows - LEFT_CHROME_ROWS) / leftItemRows(isSearch)))
+export function leftPageSize(rows: number, width: number, isSearch: boolean): number {
+  const chrome = LEFT_FIXED_ROWS + searchButtonRows(width, isSearch)
+  return Math.max(1, Math.floor((rows - chrome) / leftItemRows(isSearch)))
 }
 
 // Between two messages.
@@ -163,7 +165,7 @@ export async function scrollLeft($: EngineInterface, client: SlackClient, by: nu
   const [left, channels] = await Promise.all([readLeft($), readChannels($)])
   const { isSearch, list, top, length: loaded } = leftList(left, channels)
   const count = Math.sign(by) * Math.ceil(Math.abs(by) / leftItemRows(isSearch))
-  const size = leftPageSize(layout.leftRows, isSearch)
+  const size = leftPageSize(layout.leftRows, layout.leftWidth, isSearch)
   const needsMore = count > 0 && top + count + size > loaded && list.cursor !== undefined && !list.isLoading
   if (needsMore) {
     if (isSearch) await runSearch($, client, left.query, splitQuery(left.query).keywords, left.filters, list.cursor)
