@@ -196,9 +196,9 @@ test('channels and direct messages are listed in their own sections', async ($, 
   const ui = await $.ui.mount({ ...pane(), surface: 'terminal' })
   const HEADINGS = ['CHANNELS', 'DIRECT MESSAGES']
   const rows = (await ui.findAll({}))
-    .map(e => (e.type === 'Text' && HEADINGS.includes(e.text) ? e.text : e.key))
-    .filter(k => k !== undefined && (HEADINGS.includes(k) || k.startsWith('ch:')))
-  expect(rows).toEqual(['CHANNELS', 'ch:C0FAKE0001', 'ch:C0FAKE0002', 'DIRECT MESSAGES', 'ch:D0FAKE0001', 'ch:G0FAKE0001'])
+    .map(e => (e.type === 'Text' && [...HEADINGS, ' '].includes(e.text) ? e.text : e.key))
+    .filter(k => k !== undefined && ([...HEADINGS, ' '].includes(k) || k.startsWith('ch:')))
+  expect(rows).toEqual(['CHANNELS', 'ch:C0FAKE0001', 'ch:C0FAKE0002', ' ', 'DIRECT MESSAGES', 'ch:D0FAKE0001', 'ch:G0FAKE0001'])
   expect((await ui.find({ key: 'ch:G0FAKE0001' }))?.text).toBe('@Bob, Carol')
   await ui.unmount()
 })

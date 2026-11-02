@@ -76,9 +76,11 @@ export function channelColumn(
           ))
         : channelRows(channels.items)
             .slice(top, top + pageSize)
-            .map(row =>
-              row.kind === 'heading' ? (
-                <Text key={`heading:${row.label}`} dimColor bold>
+            .map((row, i) =>
+              row.kind === 'gap' ? (
+                <Text key={`gap:${top + i}`}> </Text>
+              ) : row.kind === 'heading' ? (
+                <Text key={`heading:${row.label}`} bold color="suggestion">
                   {row.label}
                 </Text>
               ) : (
