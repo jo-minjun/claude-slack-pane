@@ -54,12 +54,16 @@ const page = <T>(items: T[], pagination: string): Page<T> => {
   return nextCursor === undefined ? { items } : { items, nextCursor }
 }
 
-const AUTHOR = /^(.*?)(?:\s*<[^>]*>)?\s*\((?:ID:\s*)?([A-Z0-9]+)\)\s*$/
+// Search results tag a bot author `  [BOT]`, sometimes with no name before its ID.
+const AUTHOR = /^(.*?)(?:\s*<[^>]*>)?\s*\((?:ID:\s*)?([A-Z0-9]+)\)(\s*\[BOT\])?\s*$/
+const UNNAMED_BOT = 'Bot'
 
 const author = (raw: string) => {
   const match = AUTHOR.exec(raw.trim())
   // The raw line can hold an email address: keep it out of the error text.
-  return match ? { userName: match[1]!.trim(), userId: match[2]! } : fail('author line')
+  if (!match) return fail('author line')
+  const name = match[1]!.trim()
+  return { userName: name === '' && match[3] !== undefined ? UNNAMED_BOT : name, userId: match[2]! }
 }
 
 const cleanBody = (lines: string[]) => {

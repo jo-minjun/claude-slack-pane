@@ -16,7 +16,7 @@ import { CHANNEL_SEARCH } from './fixtures/channel-search'
 import { CHANNEL, CHANNEL_CURSOR, CHANNEL_EMPTY } from './fixtures/channel'
 import { mcpError, mcpResult } from './fixtures/mcp'
 import { PROFILE } from './fixtures/profile'
-import { SEARCH, SEARCH_CURSOR, SEARCH_EMPTY } from './fixtures/search'
+import { SEARCH, SEARCH_BOTS, SEARCH_CURSOR, SEARCH_EMPTY } from './fixtures/search'
 import { THREAD, THREAD_CURSOR, THREAD_NO_REPLIES } from './fixtures/thread'
 
 const parseError = (fn: () => unknown) => {
@@ -156,4 +156,8 @@ test('unrecognized text throws parse error', () => {
   expect(parseError(() => parseChannelList('hello'))).toBe('parse')
   expect(parseError(() => parseChannelSearch('hello', ''))).toBe('parse')
   expect(parseError(() => parseProfile('hello'))).toBe('parse')
+})
+
+test('search hits by bots keep their name, or Bot when it has none', () => {
+  expect(parseSearch(SEARCH_BOTS, '').items.map(hit => hit.userName)).toEqual(['deploy-bot', 'Bot'])
 })
