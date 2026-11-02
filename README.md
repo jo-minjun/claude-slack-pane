@@ -10,7 +10,7 @@ It talks to Slack through the Slack MCP server you already connected to Claude C
 - **Separate scrolling.** Each column scrolls on its own. The mouse wheel moves the column under the pointer. The scroll keys move the messages. When you scroll up, new messages do not move the view; scroll to the bottom to follow the latest again.
 - **Search.** Type a query and press Enter. Slack search modifiers work (`in:`, `from:`, `after:`). `☐ From me` is a filter: turn it on (`☑`) to search only your own messages, alone or with a query. A result opens as a thread view; `← #channel` goes to the message's place in the channel.
 - **Live view.** Only the open channel or thread is re-read, every 10 seconds by default. The header shows the refresh state (`↻ 10s · 14:05:12`, `↻ updating…`, `⏸ paused`, `⚠ failed …`).
-- **Send.** The line above the input says where a message goes (`To #general`, `Reply in thread · #general`). Enter sends at once.
+- **Send.** The empty input says where a message goes (`Message #general`, `Reply in thread · #general`), and the header names the channel while you type. Enter sends at once.
 - **Images.** `Attach file` takes a path (dragging a file onto the terminal types its path). `Paste image` sends the image on the clipboard (macOS only).
 - **Quote into Claude.** Select a message, then `Quote message` or `Quote thread`. A short reference goes into the prompt box; when you send the prompt, the mod attaches the message or the whole thread as context. Quoted text is marked as untrusted data.
 - **Copy link.** Copies the message's Slack link.
@@ -54,7 +54,7 @@ claude --plugin-dir /path/to/claude-slack-pane
 
 - The Slack MCP returns human-readable text. The mod parses it; a change in that text format can break parsing. The pane then says `Unrecognized Slack response`, and the debug log (`claude --debug`) holds the start of the response.
 - No unread markers, no emoji rendering, no reactions.
-- Sending has no confirmation step. Check the destination line before pressing Enter.
+- Sending has no confirmation step. Check the header before pressing Enter.
 
 ## Development
 

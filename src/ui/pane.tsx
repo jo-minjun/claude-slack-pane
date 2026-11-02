@@ -22,7 +22,7 @@ import { headerRow, messageList, refreshText } from './message-column'
 const MIN_LEFT = 22
 const LEFT_SHARE = 0.3
 // Header, ▲ Older, and the composer with its frame.
-const RIGHT_RESERVED_ROWS = 10
+const RIGHT_RESERVED_ROWS = 9
 
 export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, client: SlackClient) {
   const els = $.ui.resolve(e)

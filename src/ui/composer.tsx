@@ -17,7 +17,6 @@ export function composerBox(
   if (!Input) return <Text dimColor>{destination(view)}</Text>
   return (
     <Box flexDirection="column">
-      <Text dimColor>{destination(view)}</Text>
       {composer.error !== undefined && <Text color="red">{composer.error}</Text>}
       {composer.isSending && <Text dimColor>sending…</Text>}
       <Box key="composer-frame" borderStyle="round" borderColor="promptBorder" paddingX={1}>
@@ -25,7 +24,7 @@ export function composerBox(
           key="composer"
           rows={3}
           submitLabel="send"
-          placeholder={view.kind === 'thread' ? 'Reply in thread' : `Message ${view.label}`}
+          placeholder={destination(view)}
           value={composer.draft ?? ''}
           onSubmit={(value: string) => void sendComposer($, client, view, value)}
         />

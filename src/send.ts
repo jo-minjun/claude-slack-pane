@@ -14,8 +14,9 @@ export function threadTsOf(view: View): string | undefined {
   return view.kind === 'thread' ? view.threadTs : undefined
 }
 
+// Where Enter sends, as the composer's placeholder says it.
 export function destination(view: View): string {
-  return view.kind === 'thread' ? `Reply in thread · ${view.label}` : `To ${view.label}`
+  return view.kind === 'thread' ? `Reply in thread · ${view.label}` : `Message ${view.label}`
 }
 
 export async function sendComposer(
