@@ -1,21 +1,24 @@
 import type { EngineInterface } from 'claude-code'
 
-import type { Channel } from '../types'
+import type { Channel, View } from '../types'
 import { closePane, findKnownChannel, myUserId, openPane, runSearch } from './actions'
 import { reportError } from './errors'
 import { channelLabel } from './format'
 import { openView, setIntervalSeconds } from './poller'
 import type { SlackClient } from './slack/client'
+import { type MessageLink, parseMessageLink } from './slack/link'
 import { readIntervalSeconds, readLeft, readPaneOpen, updateLeft } from './state'
 
 const MIN_INTERVAL = 5
 const MAX_INTERVAL = 300
 
-export type Target = { kind: 'id'; id: string } | { kind: 'name'; name: string; isDm: boolean }
+export type Target = { kind: 'id'; id: string } | { kind: 'name'; name: string; isDm: boolean } | ({ kind: 'link' } & MessageLink)
 
 export function parseTarget(arg: string): Target | undefined {
   const text = arg.trim()
   if (text === '') return undefined
+  const link = parseMessageLink(text)
+  if (link) return { kind: 'link', ...link }
   if (text.startsWith('#')) return { kind: 'name', name: text.slice(1), isDm: false }
   if (text.startsWith('@')) return { kind: 'name', name: text.slice(1), isDm: true }
   if (/^[CDG][A-Z0-9]+$/.test(text)) return { kind: 'id', id: text }
@@ -50,8 +53,9 @@ export function parseInterval(arg: string): number | undefined {
 }
 
 async function resolveTarget($: EngineInterface, client: SlackClient, target: Target): Promise<Channel | undefined> {
-  if (target.kind === 'id') {
-    return (await findKnownChannel($, c => c.id === target.id)) ?? { id: target.id, name: target.id, kind: 'public' }
+  if (target.kind === 'id' || target.kind === 'link') {
+    const id = target.kind === 'id' ? target.id : target.channelId
+    return (await findKnownChannel($, c => c.id === id)) ?? { id, name: id, kind: 'public' }
   }
   const known = await findKnownChannel(
     $,
@@ -80,8 +84,18 @@ export async function runPaneCommand($: EngineInterface, client: SlackClient, ar
   }
   if (!channel) return `Channel not found: ${args.trim()}`
   const label = channelLabel(channel)
-  await openView($, client, { kind: 'channel', channelId: channel.id, label })
-  return `Opened ${label}`
+  if (target.kind !== 'link') {
+    await openView($, client, { kind: 'channel', channelId: channel.id, label })
+    return `Opened ${label}`
+  }
+  // A reply opens in its thread, as a search hit does; any other message in its channel, at its place.
+  const { ts, threadTs } = target
+  const view: View =
+    threadTs === undefined || threadTs === ts
+      ? { kind: 'channel', channelId: channel.id, label, anchorTs: ts }
+      : { kind: 'thread', channelId: channel.id, label, threadTs, back: { anchorTs: threadTs } }
+  await openView($, client, view, ts)
+  return `Opened ${label} at ${ts}`
 }
 
 export async function runRefreshCommand($: EngineInterface, client: SlackClient, args: string): Promise<string> {

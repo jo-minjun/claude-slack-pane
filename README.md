@@ -42,7 +42,7 @@ claude --plugin-dir /path/to/claude-slack-pane
 
 | Command | What it does |
 | --- | --- |
-| `/slack-pane [#channel \| @user \| channel ID]` | Without an argument, opens or closes the pane. With one, opens the pane on that channel or DM. |
+| `/slack-pane [#channel \| @user \| channel ID \| message link]` | Without an argument, opens or closes the pane. With a channel or DM, opens the pane on it. With a Slack message link, opens the message at its place in the channel, or a reply in its thread. |
 | `/slack-pane-refresh [seconds]` | Shows the refresh interval, or sets it (5–300 seconds). The value is kept across sessions. |
 | `/slack-pane-search <query>` | Opens the pane and searches messages. |
 

@@ -178,6 +178,16 @@ test('a message is pressable across the whole width and lets go when pressed aga
   await ui.unmount()
 })
 
+test('a channel opened at an older message starts its window at that message', async ($, on) => {
+  engine(on, slack({ newest: 40 }))
+  await start($)
+  await run($, 'slack-pane', `https://acme.slack.com/archives/${channelId(0)}/p${tsOf(5).replace('.', '')}`)
+  const ui = await $.ui.mount(pane)
+  expect((await ui.findAll({ type: 'Button' })).map(b => b.key).find(k => k?.startsWith('msg:'))).toBe(`msg:${tsOf(5)}`)
+  expect(await ui.find({ key: `msg:${tsOf(39)}` })).toBeUndefined()
+  await ui.unmount()
+})
+
 test('a message taller than the window can be read to its end', async ($, on) => {
   const long = Array.from({ length: 30 }, (_, i) => `line ${i}`).join('\n')
   const base = slack({ newest: 40 })

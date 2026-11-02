@@ -124,13 +124,15 @@ export async function restartTimer($: EngineInterface, client: SlackClient): Pro
   timer = scheduled
 }
 
-export async function openView($: EngineInterface, client: SlackClient, v: View): Promise<void> {
+// Opens `v` with its window starting at `startTs` once that message is loaded; an anchored channel starts at its anchor.
+export async function openView($: EngineInterface, client: SlackClient, v: View, startTs?: string): Promise<void> {
   stopTimer()
   viewGeneration += 1
   const generation = viewGeneration
   await updateView($, () => v)
   await updateSelectedTs($, () => null)
-  await updateMessageTop($, () => null)
+  const start = startTs ?? (v.kind === 'channel' ? v.anchorTs : undefined)
+  await updateMessageTop($, () => (start === undefined ? null : { ts: start, skip: 0 }))
   // A draft or attachment belongs to the view it was made in: never send it elsewhere.
   await removeTemp($, (await readComposer($)).attachment)
   await updateComposer($, () => ({ draft: '', isPathMode: false, isSending: false }))

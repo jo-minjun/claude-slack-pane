@@ -26,6 +26,18 @@ describe('argument parsing', () => {
     expect(parseTarget('@Bob')).toEqual({ kind: 'name', name: 'Bob', isDm: true })
     expect(parseTarget('C0123ABCD')).toEqual({ kind: 'id', id: 'C0123ABCD' })
     expect(parseTarget('  ')).toBeUndefined()
+    expect(parseTarget('https://acme.slack.com/archives/C0123ABCD/p1793590460032119')).toEqual({
+      kind: 'link',
+      channelId: 'C0123ABCD',
+      ts: '1793590460.032119',
+    })
+    expect(parseTarget('https://acme.slack.com/archives/C062VH82275/p1793088676072399?thread_ts=1792730962.696089&cid=C062VH82275')).toEqual({
+      kind: 'link',
+      channelId: 'C062VH82275',
+      ts: '1793088676.072399',
+      threadTs: '1792730962.696089',
+    })
+    expect(parseTarget('https://acme.slack.com/archives/C0123ABCD')).toEqual({ kind: 'name', name: 'https://acme.slack.com/archives/C0123ABCD', isDm: false })
   })
 
   test('splitQuery', () => {
@@ -47,10 +59,27 @@ test('commands are registered immediate', async ($, on) => {
   const { registered } = engine(on, slack)
   await start($)
   expect(registered.map(r => [r.name, r.immediate, r.argumentHint])).toEqual([
-    ['slack-pane', true, '[#channel | @user | channel ID]'],
+    ['slack-pane', true, '[#channel | @user | channel ID | message link]'],
     ['slack-pane-refresh', true, '[seconds]'],
     ['slack-pane-search', true, '<query>'],
   ])
+})
+
+test('pane command opens a message link at its place, a reply in its thread', async ($, on) => {
+  const { states } = engine(on, slack)
+  await start($)
+  expect(await run($, 'slack-pane', 'https://acme.slack.com/archives/C0FAKE0001/p1793325746615629')).toBe('Opened #general at 1793325746.615629')
+  expect(states.view).toEqual({ kind: 'channel', channelId: 'C0FAKE0001', label: '#general', anchorTs: '1793325746.615629' })
+  expect(states.messageTop).toEqual({ ts: '1793325746.615629', skip: 0 })
+  await run($, 'slack-pane', 'https://acme.slack.com/archives/C0FAKE0001/p1793334367423609?thread_ts=1793325746.615629&cid=C0FAKE0001')
+  expect(states.view).toEqual({
+    kind: 'thread',
+    channelId: 'C0FAKE0001',
+    label: '#general',
+    threadTs: '1793325746.615629',
+    back: { anchorTs: '1793325746.615629' },
+  })
+  expect(states.messageTop).toEqual({ ts: '1793334367.423609', skip: 0 })
 })
 
 test('pane command toggles and opens a channel', async ($, on) => {

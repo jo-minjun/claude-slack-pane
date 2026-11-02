@@ -17,8 +17,8 @@ export const register: Register = (on, options) => {
     const started = await next(e)
     await $.command.register({
       name: 'slack-pane',
-      description: 'Open or close the Slack pane, or open a channel in it',
-      argumentHint: '[#channel | @user | channel ID]',
+      description: 'Open or close the Slack pane, or open a channel or message link in it',
+      argumentHint: '[#channel | @user | channel ID | message link]',
       immediate: true,
     })
     await $.command.register({

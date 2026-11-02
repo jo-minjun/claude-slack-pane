@@ -107,7 +107,7 @@ function searchHit($: EngineInterface, client: SlackClient, els: ElementTable, h
             label: hitLabel(hit),
             threadTs: hit.threadTs ?? hit.ts,
             back: { anchorTs: hit.threadTs ?? hit.ts },
-          })
+          }, hit.ts)
         }
       >
         <Text bold color="suggestion" hover={MESSAGE_HOVER}>

@@ -42,7 +42,7 @@ claude --plugin-dir /path/to/claude-slack-pane
 
 | 명령어 | 동작 |
 | --- | --- |
-| `/slack-pane [#channel \| @user \| channel ID]` | 인자가 없으면 pane을 열거나 닫는다. 인자가 있으면 그 채널이나 DM으로 pane을 연다. |
+| `/slack-pane [#channel \| @user \| channel ID \| message link]` | 인자가 없으면 pane을 열거나 닫는다. 채널이나 DM을 주면 그곳으로 pane을 연다. Slack 메시지 링크를 주면 채널의 그 메시지 위치로 열고, 답글이면 그 스레드를 연다. |
 | `/slack-pane-refresh [seconds]` | 새로고침 주기를 보여 주거나 정한다(5–300초). 정한 값은 세션이 바뀌어도 유지된다. |
 | `/slack-pane-search <query>` | pane을 열고 메시지를 검색한다. |
 
