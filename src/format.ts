@@ -34,7 +34,16 @@ export function clockTime(ms: number, tzMinutes: number): string {
 }
 
 // Hangul, CJK, full-width forms and most emoji take two terminal cells.
-const WIDE = /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F300}-\u{1FAFF}]/u
+// Symbols the Unicode tables draw two cells wide by default (✅ ❌ ⭐ ⚡ ⬜ …) are listed one by one.
+const WIDE =
+  /[\u1100-\u115F\u231A\u231B\u23E9-\u23EC\u23F0\u23F3\u25FD\u25FE\u2614\u2615\u2648-\u2653\u267F\u2693\u26A1\u26AA\u26AB\u26BD\u26BE\u26C4\u26C5\u26CE\u26D4\u26EA\u26F2\u26F3\u26F5\u26FA\u26FD\u2705\u270A\u270B\u2728\u274C\u274E\u2753-\u2755\u2757\u2795-\u2797\u27B0\u27BF\u2B1B\u2B1C\u2B50\u2B55\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6\u{1F004}\u{1F0CF}\u{1F18E}\u{1F191}-\u{1F19A}\u{1F200}-\u{1F2FF}\u{1F300}-\u{1FAFF}]/u
+// Joiners, presentation selectors and skin tones fuse emoji into one glyph only in some terminals.
+const EMOJI_GLUE = /[\u200D\uFE0E\uFE0F\u{1F3FB}-\u{1F3FF}]/gu
+
+// Text as the pane draws it: every emoji a glyph of its own, so its width is the same everywhere.
+export function plainEmoji(text: string): string {
+  return text.replace(EMOJI_GLUE, '')
+}
 
 export function charWidth(char: string): number {
   return WIDE.test(char) ? 2 : 1

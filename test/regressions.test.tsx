@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { displayWidth, fitWidth, wrapText } from '../src/format'
+import { displayWidth, fitWidth, plainEmoji, wrapText } from '../src/format'
 import { createMcpClient } from '../src/slack/mcp-client'
 import { CHANNEL } from './fixtures/channel'
 import { PROFILE } from './fixtures/profile'
@@ -97,4 +97,11 @@ test('pane command reports a Slack failure instead of throwing', async ($, on) =
   await start($)
   expect(await run($, 'slack-pane', '#general')).toBe('Slack MCP not connected')
   expect(await run($, 'slack-pane-search', 'deploy')).toBe('Searching: deploy')
+})
+
+// A fused emoji is two cells to the layout but wider in some terminals, which shifted the rows below it.
+test('emoji are drawn one glyph at a time and wide symbols count two cells', () => {
+  expect(plainEmoji('🧑\u200D🎄\u{1F3FC} 이번 주 ✔\uFE0F')).toBe('🧑🎄 이번 주 ✔')
+  expect(displayWidth('✅❌⭐⚡⬜')).toBe(10)
+  expect(displayWidth('🧑🎄')).toBe(4)
 })

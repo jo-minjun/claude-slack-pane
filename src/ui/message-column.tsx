@@ -1,7 +1,7 @@
 import type { ElementTable, EngineInterface } from 'claude-code'
 
 import type { Loadable, Message, RefreshState, View } from '../../types'
-import { clockTime, displayWidth, fitWidth, formatTime } from '../format'
+import { clockTime, displayWidth, fitWidth, formatTime, plainEmoji } from '../format'
 import { loadOlder, openView } from '../poller'
 import { lastTop, type MessageFrame, messageHeight, newerBelow, scrollMessages, selectMessage } from '../scroll'
 import type { SlackClient } from '../slack/client'
@@ -96,7 +96,7 @@ export function messageList(
     const parts = []
     if (hasHeader || body.length > 0) {
       const meta = messageMeta(m, clock)
-      const name = fitWidth(`${m.ts === selectedTs ? '> ' : ''}${m.userName}`, Math.max(1, frame.width - displayWidth(meta)))
+      const name = fitWidth(`${m.ts === selectedTs ? '> ' : ''}${plainEmoji(m.userName)}`, Math.max(1, frame.width - displayWidth(meta)))
       parts.push(
         <Box key={`row:${m.ts}`} flexDirection="column" hover={MESSAGE_HOVER}>
           <Button key={`msg:${m.ts}`} plain onPress={() => void selectMessage($, m.ts)}>

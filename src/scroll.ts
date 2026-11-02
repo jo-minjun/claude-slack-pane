@@ -3,7 +3,7 @@ import type { EngineInterface, UiScrollInput } from 'claude-code'
 import type { Channel, ChannelsState, LeftState, Message, MessageAnchor, View } from '../types'
 import { loadChannels, runSearch } from './actions'
 import { splitQuery } from './commands'
-import { isDirect, wrapText } from './format'
+import { isDirect, plainEmoji, wrapText } from './format'
 import { loadOlder } from './poller'
 import type { SlackClient } from './slack/client'
 import { actionBarRows } from './ui/action-bar'
@@ -61,8 +61,9 @@ export function leftPageSize(rows: number, isSearch: boolean): number {
 
 // Between two messages.
 const GAP_ROWS = 1
-// One cell left free at the right edge, so a full row never wraps.
-const EDGE_CELLS = 1
+// Cells left free at the right edge, so a full row never wraps even when a symbol the width
+// table misses is drawn a cell wider: a wrapped row shifts every row below it on screen.
+const EDGE_CELLS = 2
 const FILE_ROW = '[file]'
 
 // The right column's messages laid out in rows: each a header row, its body rows, and the
@@ -95,7 +96,7 @@ export function messageFrame(
 ): MessageFrame {
   const textWidth = Math.max(1, width - EDGE_CELLS)
   const barRows = actionBarRows(view, width)
-  const body = items.map(m => [...wrapText(m.text === '' ? ' ' : m.text, textWidth), ...(m.hasFile ? [FILE_ROW] : [])])
+  const body = items.map(m => [...wrapText(m.text === '' ? ' ' : plainEmoji(m.text), textWidth), ...(m.hasFile ? [FILE_ROW] : [])])
   const bar = items.map(m => (m.ts === selectedTs ? barRows : 0))
   const pos: number[] = []
   let total = 0
