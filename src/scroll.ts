@@ -32,8 +32,11 @@ export function leftPageSize(rows: number, isSearch: boolean): number {
   return Math.max(1, Math.floor((rows - LEFT_CHROME_ROWS) / (isSearch ? SEARCH_HIT_ROWS : 1)))
 }
 
+// The blank row the message list draws between two messages.
+export const MESSAGE_GAP_ROWS = 1
+
 export function messageRows(m: Message, width: number): number {
-  return 1 + rowsFor(m.text, width - 2) + (m.hasFile ? 1 : 0)
+  return 1 + rowsFor(m.text, width) + (m.hasFile ? 1 : 0) + MESSAGE_GAP_ROWS
 }
 
 // The messages that fit `rows` ending at `bottomTs` (the newest when null), as [start, end).
@@ -88,15 +91,17 @@ export async function scrollMessages($: EngineInterface, client: SlackClient, by
   if (before.items.length > 0 && (isAtOldest || isAtNewest)) await loadOlderOnce($, client)
   const items = (await readMessages($)).items
   let { end } = messageWindow(items, bottomTs, rows, width)
+  // Move whole messages, at least one, without passing `by` rows: a page move must not skip any.
+  const fits = (moved: number, need: number) => moved === 0 || moved + need <= Math.abs(by)
   let moved = 0
   if (by < 0) {
-    while (end > 1 && moved < -by) {
+    while (end > 1 && moved < -by && fits(moved, messageRows(items[end - 1]!, width))) {
       moved += messageRows(items[end - 1]!, width)
       end -= 1
     }
     end = Math.max(end, firstFullEnd(items, rows, width))
   } else {
-    while (end < items.length && moved < by) {
+    while (end < items.length && moved < by && fits(moved, messageRows(items[end]!, width))) {
       moved += messageRows(items[end]!, width)
       end += 1
     }

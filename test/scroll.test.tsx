@@ -119,7 +119,7 @@ test('a new message keeps a scrolled-up view in place', async ($, on) => {
 test('older at the oldest message loads earlier ones and shows them', async ($, on) => {
   const { sent } = engine(on, slack({ newest: 30 }))
   const ui = await openFirstChannel($)
-  for (let i = 0; i < 5 && !(await ui.find({ key: `msg:${tsOf(9)}` })); i += 1) await ui.press({ key: 'older' })
+  for (let i = 0; i < 10 && !(await ui.find({ key: `msg:${tsOf(9)}` })); i += 1) await ui.press({ key: 'older' })
   expect(count(sent, 'slack_read_channel')).toBe(2)
   expect(await ui.find({ key: `msg:${tsOf(9)}` })).toBeDefined()
   await ui.unmount()

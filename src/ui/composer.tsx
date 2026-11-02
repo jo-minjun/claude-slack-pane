@@ -54,14 +54,16 @@ export function composerBox(
       <Text dimColor>{destination(view)}</Text>
       {composer.error !== undefined && <Text color="red">{composer.error}</Text>}
       {composer.isSending && <Text dimColor>sending…</Text>}
-      <Input
-        key="composer"
-        rows={3}
-        submitLabel="send"
-        placeholder={view.kind === 'thread' ? 'Reply in thread' : `Message ${view.label}`}
-        value={composer.draft ?? ''}
-        onSubmit={(value: string) => void sendComposer($, client, view, value)}
-      />
+      <Box key="composer-frame" borderStyle="round" borderColor="promptBorder" paddingX={1}>
+        <Input
+          key="composer"
+          rows={3}
+          submitLabel="send"
+          placeholder={view.kind === 'thread' ? 'Reply in thread' : `Message ${view.label}`}
+          value={composer.draft ?? ''}
+          onSubmit={(value: string) => void sendComposer($, client, view, value)}
+        />
+      </Box>
       {composer.isPathMode ? (
         <Box flexDirection="row" columnGap={1}>
           <Input key="attach-path" placeholder="/path/to/image.png" submitLabel="attach" autoFocus onSubmit={(value: string) => void attachFromPath($, value)} />

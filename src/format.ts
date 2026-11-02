@@ -57,6 +57,28 @@ export function firstLine(text: string, width: number): string {
   return fitWidth(text.split('\n')[0] ?? '', width)
 }
 
+// Rows a line takes when the terminal wraps it at spaces, as Text's default wrap does.
+function wrappedRows(line: string, width: number): number {
+  let rows = 1
+  let used = 0
+  for (const word of line.split(' ')) {
+    const w = displayWidth(word)
+    const need = used === 0 ? w : used + 1 + w
+    if (need <= width) {
+      used = need
+    } else if (w <= width) {
+      rows += 1
+      used = w
+    } else {
+      const head = used === 0 ? 0 : 1
+      rows += head + Math.ceil(w / width) - 1
+      used = w % width || width
+    }
+  }
+  return rows
+}
+
 export function rowsFor(text: string, width: number): number {
-  return text.split('\n').reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / Math.max(1, width))), 0)
+  const cells = Math.max(1, width)
+  return text.split('\n').reduce((sum, line) => sum + wrappedRows(line, cells), 0)
 }

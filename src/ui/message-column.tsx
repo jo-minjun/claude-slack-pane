@@ -3,7 +3,7 @@ import type { ElementTable, EngineInterface } from 'claude-code'
 import type { Loadable, Message, RefreshState, View } from '../../types'
 import { clockTime, formatTime } from '../format'
 import { loadOlder, openView } from '../poller'
-import { messageWindow, scrollMessages } from '../scroll'
+import { MESSAGE_GAP_ROWS, messageWindow, scrollMessages } from '../scroll'
 import type { SlackClient } from '../slack/client'
 import { updateSelectedTs } from '../state'
 
@@ -18,9 +18,9 @@ export function refreshText(refresh: RefreshState, interval: number, clock: Cloc
     : `↻ ${interval}s · ${clockTime(refresh.lastSuccessAt, clock.tz)}`
 }
 
-export function messageHeader(m: Message, clock: Clock, isSelected: boolean): string {
+export function messageMeta(m: Message, clock: Clock): string {
   const replies = m.replyCount > 0 ? `  ${m.replyCount} replies` : ''
-  return `${isSelected ? '> ' : ''}${m.userName} ${formatTime(m.ts, clock.now, clock.tz)}${replies}`
+  return `  ${formatTime(m.ts, clock.now, clock.tz)}${replies}`
 }
 
 export function headerRow(
@@ -80,14 +80,17 @@ export function messageList(
       {messages.isLoading && <Text dimColor>Loading…</Text>}
       {messages.error !== undefined && <Text color="red">⚠ {messages.error}</Text>}
       {!messages.isLoading && messages.items.length === 0 && messages.error === undefined && <Text dimColor>No messages</Text>}
-      {shown.map(m => (
-        <Button key={`msg:${m.ts}`} onPress={() => void updateSelectedTs($, () => m.ts)}>
-          <Text bold={m.ts === selectedTs} color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : undefined}>
-            {messageHeader(m, clock, m.ts === selectedTs)}
-          </Text>
-          <Text>{`\n${m.text === '' ? ' ' : m.text}${m.hasFile ? '\n[file]' : ''}`}</Text>
-        </Button>
-      ))}
+      <Box flexDirection="column" gap={MESSAGE_GAP_ROWS}>
+        {shown.map(m => (
+          <Button key={`msg:${m.ts}`} plain onPress={() => void updateSelectedTs($, () => m.ts)}>
+            <Text bold color={view.kind === 'channel' && m.ts === view.anchorTs ? 'yellow' : 'suggestion'}>
+              {`${m.ts === selectedTs ? '> ' : ''}${m.userName}`}
+            </Text>
+            <Text dimColor>{messageMeta(m, clock)}</Text>
+            <Text>{`\n${m.text === '' ? ' ' : m.text}${m.hasFile ? '\n[file]' : ''}`}</Text>
+          </Button>
+        ))}
+      </Box>
       {view.kind === 'channel' && view.anchorTs !== undefined && (
         <Button
           key="latest"
