@@ -65,7 +65,10 @@ test('search shows hits and clear returns', async ($, on) => {
   await run($, 'slack-pane')
   const ui = await $.ui.mount({ ...pane(), surface: 'terminal' })
   await ui.input({ key: 'search', text: 'deploy' })
-  const [head, line] = (await ui.find({ key: 'hit:C0FAKE0002:1793339391.207789' }))!.text!.split('\n')
+  const hitText = (await ui.find({ key: 'hit:C0FAKE0002:1793339391.207789' }))!.text!
+  // What lights under the pointer holds nothing but what a press opens: no blank row after it.
+  expect((await ui.find({ key: 'hit-row:C0FAKE0002:1793339391.207789' }))?.text).toBe(hitText)
+  const [head, line] = hitText.split('\n')
   expect(head).toMatch(/^#backend +14:49$/)
   expect(line).toMatch(/^Alice Kim: Reply in a/)
   expect(head!.length).toBe(line!.length)

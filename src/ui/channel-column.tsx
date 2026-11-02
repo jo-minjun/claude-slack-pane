@@ -61,7 +61,7 @@ export function channelColumn(
       {list.error !== undefined && <Text color="red">⚠ {list.error}</Text>}
       {isSearch && !list.isLoading && list.items.length === 0 && list.error === undefined && <Text dimColor>No results</Text>}
       {isSearch
-        ? left.results.items.slice(top, top + pageSize).map(hit => searchHit($, client, els, hit, width - HIT_EDGE_CELLS, clock))
+        ? left.results.items.slice(top, top + pageSize).flatMap(hit => searchHit($, client, els, hit, width - HIT_EDGE_CELLS, clock))
         : channelRows(channels.items)
             .slice(top, top + pageSize)
             .map((row, i) =>
@@ -85,6 +85,7 @@ export function channelColumn(
 }
 
 // A hit drawn as a message is: channel and time, then author and text, padded so the whole row takes a press.
+// The blank row after it stands outside the lit Box, so what lights under the pointer is what a press opens.
 function searchHit($: EngineInterface, client: SlackClient, els: ElementTable, hit: SearchHit, cells: number, clock: Clock) {
   const { Box, Text, Button } = els
   const time = formatTime(hit.ts, clock.now, clock.tz)
@@ -92,8 +93,8 @@ function searchHit($: EngineInterface, client: SlackClient, els: ElementTable, h
   const author = `${fitWidth(hit.userName, Math.max(1, Math.floor(cells / 2)))}: `
   const text = firstLine(hit.text, Math.max(1, cells - displayWidth(author)))
   const key = `${hit.channelId}:${hit.ts}`
-  return (
-    <Box key={`hit-row:${key}`} flexDirection="column" hover={MESSAGE_HOVER}>
+  return [
+    <Box key={`hit-row:${key}`} flexDirection="column" width={cells} hover={MESSAGE_HOVER}>
       <Button
         key={`hit:${key}`}
         plain
@@ -117,7 +118,7 @@ function searchHit($: EngineInterface, client: SlackClient, els: ElementTable, h
         <Text dimColor hover={MESSAGE_HOVER}>{`\n${author}`}</Text>
         <Text hover={MESSAGE_HOVER}>{padWidth(text, cells - displayWidth(author))}</Text>
       </Button>
-      <Text> </Text>
-    </Box>
-  )
+    </Box>,
+    <Text key={`hit-gap:${key}`}> </Text>,
+  ]
 }
