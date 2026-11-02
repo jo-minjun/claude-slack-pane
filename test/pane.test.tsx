@@ -141,11 +141,12 @@ test('left column width', async ($, on) => {
   engine(on, slack)
   await start($)
   await run($, 'slack-pane')
-  const wide = await $.ui.mount({ ...pane(90), surface: 'terminal' })
-  expect((await wide.find({ key: 'left' }))?.props.width).toBe(27)
+  const wide = await $.ui.mount({ ...pane(120), surface: 'terminal' })
+  expect((await wide.find({ key: 'left' }))?.props.width).toBe(36)
   await wide.unmount()
+  // Never so narrow that the search frame's `[ ☐ From me ] [ × Clear ]` spills over the right column.
   const narrow = await $.ui.mount({ ...pane(60), surface: 'terminal' })
-  expect((await narrow.find({ key: 'left' }))?.props.width).toBe(22)
+  expect((await narrow.find({ key: 'left' }))?.props.width).toBe(29)
   await narrow.unmount()
 })
 

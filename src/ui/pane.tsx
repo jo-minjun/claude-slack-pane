@@ -15,11 +15,10 @@ import {
   readSelectedTs,
   readView,
 } from '../state'
-import { channelColumn } from './channel-column'
+import { channelColumn, MIN_LEFT_WIDTH } from './channel-column'
 import { composerBox } from './composer'
 import { headerRow, latestRow, messageList, refreshText } from './message-column'
 
-const MIN_LEFT = 22
 const LEFT_SHARE = 0.3
 // Header and its rule, ▲ Older and the blank under it, the row above the composer (▼ Latest or blank), and the composer with its frame.
 const RIGHT_RESERVED_ROWS = 12
@@ -30,7 +29,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>, cli
   const { Box, Text } = els
   const columns = e.props.bodyColumns
   const rows = e.props.scroll.bodyRows
-  const leftWidth = Math.max(MIN_LEFT, Math.floor(columns * LEFT_SHARE))
+  const leftWidth = Math.max(MIN_LEFT_WIDTH, Math.floor(columns * LEFT_SHARE))
   const rightWidth = Math.max(10, columns - leftWidth)
   const [banner, channels, left, view, messages, selectedTs, messageTop, refresh, interval, composer] = await Promise.all([
     readBanner($),

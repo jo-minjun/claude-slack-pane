@@ -13,6 +13,13 @@ import { type Clock, MESSAGE_HOVER } from './message-column'
 const BUTTON_CHROME = 5
 // The column's padding, and a cell for a symbol the width table misses, so a hit's row never wraps.
 const HIT_EDGE_CELLS = 2
+const FROM_ME_LABEL = 'From me'
+const CLEAR_LABEL = '× Clear'
+const fromMeLabel = (isOn: boolean) => `${isOn ? '☑' : '☐'} ${FROM_ME_LABEL}`
+// The narrowest column whose search frame holds both its buttons on one row: wider than the frame, a row
+// draws over the right column. The buttons and the cell between them, the frame's two sides, the padding, a spare cell.
+export const MIN_LEFT_WIDTH =
+  displayWidth(fromMeLabel(false)) + displayWidth(CLEAR_LABEL) + 2 * (BUTTON_CHROME - 1) + 1 + 2 + HIT_EDGE_CELLS
 
 export function hitLabel(hit: SearchHit): string {
   return hit.channelId.startsWith('D') ? `@${hit.channelName}` : `#${hit.channelName}`
@@ -50,9 +57,9 @@ export function channelColumn(
           <Input key="search" placeholder="Search messages" value={left.query} submitLabel="search" onSubmit={(value: string) => void searchMessages($, client, value.trim(), left.fromMe)} />
         )}
         <Box flexDirection="row" gap={1}>
-          <Button key="from-me" label={`${left.fromMe ? '☑' : '☐'} From me`} onPress={() => void toggleFromMe()} />
+          <Button key="from-me" label={fromMeLabel(left.fromMe)} onPress={() => void toggleFromMe()} />
           {isSearch && (
-            <Button key="clear" label="× Clear" onPress={() => void updateLeft($, l => ({ ...l, mode: 'channels' as const, top: 0 }))} />
+            <Button key="clear" label={CLEAR_LABEL} onPress={() => void updateLeft($, l => ({ ...l, mode: 'channels' as const, top: 0 }))} />
           )}
         </Box>
       </Box>

@@ -78,7 +78,7 @@ test('channel buttons fit the left column including brackets', async ($, on) => 
   })
   for (const key of ['ch:C0FAKE0010', 'ch:C0FAKE0011']) {
     const label = (await ui.find({ key }))?.text ?? ''
-    expect(displayWidth(label) + 4).toBeLessThanOrEqual(27 - 1)
+    expect(displayWidth(label) + 4).toBeLessThanOrEqual(29 - 1)
   }
   await ui.unmount()
 })
