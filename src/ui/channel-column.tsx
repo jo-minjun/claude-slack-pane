@@ -4,7 +4,7 @@ import type { ChannelsState, LeftState, SearchHit, View } from '../../types'
 import { searchMessages } from '../commands'
 import { channelLabel, firstLine } from '../format'
 import { openView } from '../poller'
-import { leftItemRows, leftList, leftPageSize, scrollLeft } from '../scroll'
+import { channelRows, leftItemRows, leftList, leftPageSize, scrollLeft } from '../scroll'
 import type { SlackClient } from '../slack/client'
 import { updateLeft } from '../state'
 
@@ -27,10 +27,10 @@ export function channelColumn(
 ) {
   const { Box, Text, Button } = els
   const Input = 'Input' in els ? (els as ElementTable<'terminal'>).Input : undefined
-  const { isSearch, list, top } = leftList(left, channels)
+  const { isSearch, list, top, length } = leftList(left, channels)
   const pageSize = leftPageSize(rows, isSearch)
   const pageRows = pageSize * leftItemRows(isSearch)
-  const hasMoreLoaded = top + pageSize < list.items.length
+  const hasMoreLoaded = top + pageSize < length
   const toggleFromMe = async () => {
     const next = !left.fromMe
     await updateLeft($, l => ({ ...l, fromMe: next }))
@@ -74,13 +74,21 @@ export function channelColumn(
               <Text>{`\n${firstLine(hit.text, width - BUTTON_CHROME)}`}</Text>
             </Button>
           ))
-        : channels.items.slice(top, top + pageSize).map(channel => (
-            <Button
-              key={`ch:${channel.id}`}
-              label={firstLine(`${view?.channelId === channel.id ? '> ' : ''}${channelLabel(channel)}`, width - BUTTON_CHROME)}
-              onPress={() => void openView($, client, { kind: 'channel', channelId: channel.id, label: channelLabel(channel) })}
-            />
-          ))}
+        : channelRows(channels.items)
+            .slice(top, top + pageSize)
+            .map(row =>
+              row.kind === 'heading' ? (
+                <Text key={`heading:${row.label}`} dimColor bold>
+                  {row.label}
+                </Text>
+              ) : (
+                <Button
+                  key={`ch:${row.channel.id}`}
+                  label={firstLine(`${view?.channelId === row.channel.id ? '> ' : ''}${channelLabel(row.channel)}`, width - BUTTON_CHROME)}
+                  onPress={() => void openView($, client, { kind: 'channel', channelId: row.channel.id, label: channelLabel(row.channel) })}
+                />
+              ),
+            )}
       {(hasMoreLoaded || list.cursor !== undefined) && <Button key="more-down" label="▼ More" onPress={() => void scrollLeft($, client, pageRows)} />}
     </Box>
   )

@@ -166,3 +166,39 @@ test('banner shows not connected', async ($, on) => {
   expect(await ui.find({ type: 'Text', text: /Slack MCP not connected/ })).toBeDefined()
   await ui.unmount()
 })
+
+test('channels and direct messages are listed in their own sections', async ($, on) => {
+  const MIXED = `## My Channels (showing 4)
+
+### DM with Bob
+- **ID:** D0FAKE0001
+- **Type:** Direct Message
+- **Archived:** No
+
+### #general
+- **ID:** C0FAKE0001
+- **Type:** Public Channel
+- **Archived:** No
+
+### Bob, Carol
+- **ID:** G0FAKE0001
+- **Type:** Group DM
+- **Archived:** No
+
+### #backend
+- **ID:** C0FAKE0002
+- **Type:** Private Channel
+- **Archived:** No
+`
+  engine(on, (tool, args) => (tool === 'slack_list_user_channels' ? ok({ result: MIXED }) : slack(tool, args)))
+  await start($)
+  await run($, 'slack-pane')
+  const ui = await $.ui.mount({ ...pane(), surface: 'terminal' })
+  const HEADINGS = ['CHANNELS', 'DIRECT MESSAGES']
+  const rows = (await ui.findAll({}))
+    .map(e => (e.type === 'Text' && HEADINGS.includes(e.text) ? e.text : e.key))
+    .filter(k => k !== undefined && (HEADINGS.includes(k) || k.startsWith('ch:')))
+  expect(rows).toEqual(['CHANNELS', 'ch:C0FAKE0001', 'ch:C0FAKE0002', 'DIRECT MESSAGES', 'ch:D0FAKE0001', 'ch:G0FAKE0001'])
+  expect((await ui.find({ key: 'ch:G0FAKE0001' }))?.text).toBe('@Bob, Carol')
+  await ui.unmount()
+})

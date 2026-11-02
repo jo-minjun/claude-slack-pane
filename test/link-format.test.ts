@@ -32,5 +32,5 @@ test('channelLabel by kind', () => {
   expect(channelLabel({ id: 'C1', name: 'general', kind: 'public' })).toBe('#general')
   expect(channelLabel({ id: 'C2', name: 'backend', kind: 'private' })).toBe('#backend')
   expect(channelLabel({ id: 'D1', name: 'Bob', kind: 'im' })).toBe('@Bob')
-  expect(channelLabel({ id: 'G1', name: 'Bob, Carol', kind: 'mpim' })).toBe('Bob, Carol')
+  expect(channelLabel({ id: 'G1', name: 'Bob, Carol', kind: 'mpim' })).toBe('@Bob, Carol')
 })

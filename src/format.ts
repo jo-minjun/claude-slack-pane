@@ -16,10 +16,12 @@ export function formatTime(ts: string, nowMs: number, tzOffsetMinutes: number): 
   return isToday ? time : `${pad(at.getUTCMonth() + 1)}/${pad(at.getUTCDate())} ${time}`
 }
 
+export function isDirect(channel: Channel): boolean {
+  return channel.kind === 'im' || channel.kind === 'mpim'
+}
+
 export function channelLabel(channel: Channel): string {
-  if (channel.kind === 'im') return `@${channel.name}`
-  if (channel.kind === 'mpim') return channel.name
-  return `#${channel.name}`
+  return isDirect(channel) ? `@${channel.name}` : `#${channel.name}`
 }
 
 export function tzOffsetMinutes(): number {

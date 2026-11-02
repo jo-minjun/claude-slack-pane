@@ -1,9 +1,9 @@
 import type { EngineInterface, UiScrollInput } from 'claude-code'
 
-import type { ChannelsState, LeftState, Message, MessageAnchor, View } from '../types'
+import type { Channel, ChannelsState, LeftState, Message, MessageAnchor, View } from '../types'
 import { loadChannels, runSearch } from './actions'
 import { splitQuery } from './commands'
-import { wrapText } from './format'
+import { isDirect, wrapText } from './format'
 import { loadOlder } from './poller'
 import type { SlackClient } from './slack/client'
 import { actionBarRows } from './ui/action-bar'
@@ -31,10 +31,22 @@ export function setLayout(next: PaneLayout): void {
   layout = next
 }
 
-// The list the left column shows now, and its first shown item.
+// The channel list as the left column draws it: channels, then direct messages, each under a heading.
+export type ChannelRow = { kind: 'heading'; label: string } | { kind: 'channel'; channel: Channel }
+const CHANNELS_HEADING = 'CHANNELS'
+const DIRECT_HEADING = 'DIRECT MESSAGES'
+
+export function channelRows(items: Channel[]): ChannelRow[] {
+  const section = (label: string, members: Channel[]): ChannelRow[] =>
+    members.length === 0 ? [] : [{ kind: 'heading', label }, ...members.map(channel => ({ kind: 'channel' as const, channel }))]
+  return [...section(CHANNELS_HEADING, items.filter(c => !isDirect(c))), ...section(DIRECT_HEADING, items.filter(isDirect))]
+}
+
+// The list the left column shows now, its first shown row, and how many rows it has.
 export function leftList(left: LeftState, channels: ChannelsState) {
   const isSearch = left.mode === 'search'
-  return { isSearch, list: isSearch ? left.results : channels, top: isSearch ? left.top : channels.top }
+  const length = isSearch ? left.results.items.length : channelRows(channels.items).length
+  return { isSearch, list: isSearch ? left.results : channels, top: isSearch ? left.top : channels.top, length }
 }
 
 export function leftItemRows(isSearch: boolean): number {
@@ -139,19 +151,15 @@ export async function scrollMessages($: EngineInterface, client: SlackClient, by
 export async function scrollLeft($: EngineInterface, client: SlackClient, by: number): Promise<void> {
   if (!layout || by === 0) return
   const [left, channels] = await Promise.all([readLeft($), readChannels($)])
-  const { isSearch, list, top } = leftList(left, channels)
+  const { isSearch, list, top, length: loaded } = leftList(left, channels)
   const count = Math.sign(by) * Math.ceil(Math.abs(by) / leftItemRows(isSearch))
   const size = leftPageSize(layout.leftRows, isSearch)
-  let length = list.items.length
-  if (count > 0 && top + count + size > length && list.cursor !== undefined && !list.isLoading) {
-    if (isSearch) {
-      await runSearch($, client, left.query, splitQuery(left.query).keywords, left.filters, list.cursor)
-      length = (await readLeft($)).results.items.length
-    } else {
-      await loadChannels($, client, list.cursor)
-      length = (await readChannels($)).items.length
-    }
+  const needsMore = count > 0 && top + count + size > loaded && list.cursor !== undefined && !list.isLoading
+  if (needsMore) {
+    if (isSearch) await runSearch($, client, left.query, splitQuery(left.query).keywords, left.filters, list.cursor)
+    else await loadChannels($, client, list.cursor)
   }
+  const length = needsMore ? leftList(await readLeft($), await readChannels($)).length : loaded
   const next = Math.min(Math.max(0, top + count), Math.max(0, length - size))
   if (next === top) return
   if (isSearch) await updateLeft($, l => ({ ...l, top: next }))
